@@ -1,0 +1,2 @@
+import { FeaturePage } from '@/src/components/pages/feature-page';
+export default async function Page({ params }: { params: Promise<{ organisationId: string }> }) { const { organisationId } = await params; return <FeaturePage eyebrow="Organisation operations" title="Organisation detail" description={`Platform controls and audit context for ${organisationId}.`} capability="platform.entitlements.manage" />; }

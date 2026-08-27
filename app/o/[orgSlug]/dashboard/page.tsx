@@ -1,0 +1,2 @@
+import { FeaturePage } from '@/src/components/pages/feature-page';
+export default function Page() { return <FeaturePage eyebrow="Business analytics" title="Dashboard" description="A contextual landing surface for profitability and operational health." capability="profitability.view" detail="Phase 1 intentionally establishes the dashboard route and data contracts without introducing polished KPI cards." />; }
