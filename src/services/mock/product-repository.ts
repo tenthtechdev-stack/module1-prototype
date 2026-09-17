@@ -1,33 +1,41 @@
-import { z } from 'zod';
-import { baseProducts, materializeProduct } from '@/src/fixtures/data';
-import type { ProductFilters, ProductPage, ProductRepository } from '@/src/services/contracts';
+import { financialDisclosureAllowed, redactFinancialDisclosure } from '@/src/services/mappers/financial-disclosure';
+import type { AnalysisContext } from '@/src/domain/models';
+import type { ProductListItem } from '@/src/domain/products';
+import { generateAnalyticsDataset, stableHash } from '@/src/fixtures/analytics-data';
+import { companies, marketplaceAccounts, organisation } from '@/src/fixtures/data';
+import type {
+  AccessScope,
+  ProductDetailQuery,
+  ProductQuery,
+  ProductRepository,
+  ProductTransactionsQuery,
+} from '@/src/services/contracts';
+import { materializeApprovedCogsDataset } from '@/src/services/mock/cogs-dataset';
+import {
+  aggregateProductActivity,
+  aggregateProductCosts,
+  aggregateProductExportRows,
+  aggregateProductListings,
+  aggregateProductOverview,
+  aggregateProductPage,
+  aggregateProductProfitability,
+  aggregateProductTransactions,
+  aggregateProductTrend,
+  buildProductListItem,
+  createProductAnalyticsSnapshot,
+} from '@/src/services/analytics/product-aggregation';
 
-const productSchema = z.object({
-  id: z.string(),
-  companyId: z.string(),
-  marketplaceAccountIds: z.array(z.string()),
-  marketplaces: z.array(z.enum(['amazon', 'ebay', 'temu'])),
-  sku: z.string(),
-  name: z.string(),
-  grossRevenuePence: z.number().int().nonnegative(),
-  refundsPence: z.number().int().nonnegative(),
-  cogsPence: z.number().int().nonnegative().nullable(),
-  marketplaceFeesPence: z.number().int().nonnegative(),
-  advertisingPence: z.number().int().nonnegative(),
-  shippingPence: z.number().int().nonnegative(),
-  otherDirectCostsPence: z.number().int().nonnegative(),
-  allocatedExpensesPence: z.number().int().nonnegative(),
-  priorProfitPence: z.number().int().nullable(),
-});
+export class ProductRepositorySectionError extends Error {
+  readonly code = 'section_unavailable';
 
-function hash(value: string) {
-  let result = 0;
-  for (let index = 0; index < value.length; index += 1) result = (result * 31 + value.charCodeAt(index)) | 0;
-  return Math.abs(result);
+  constructor(public readonly section: 'list' | 'overview' | 'profitability' | 'costs' | 'listings' | 'transactions' | 'trend' | 'activity') {
+    super(section === 'list' ? 'Products could not be loaded.' : `The product ${section} section could not be loaded.`);
+    this.name = 'ProductRepositorySectionError';
+  }
 }
 
 function delay(key: string, signal?: AbortSignal) {
-  const latency = 250 + (hash(key) % 951);
+  const latency = 180 + (stableHash(key) % 181);
   return new Promise<void>((resolve, reject) => {
     const timer = setTimeout(resolve, latency);
     signal?.addEventListener('abort', () => {
@@ -37,42 +45,103 @@ function delay(key: string, signal?: AbortSignal) {
   });
 }
 
-function isMissingCogs(index: number, scenarioId: string) {
-  if (scenarioId === 'cogs-missing-all') return true;
-  if (scenarioId === 'partial-cogs') return index % 4 === 0 || index % 9 === 0;
-  return index % 17 === 0;
+function deterministicSectionFailure(section: ProductRepositorySectionError['section'], query: ProductDetailQuery | ProductQuery) {
+  if (query.scenarioId !== 'repository-error') return false;
+  if (section === 'list' || section === 'activity') return true;
+  if (section === 'overview' && 'productId' in query) return stableHash(query.productId) % 3 === 0;
+  return false;
 }
 
-class MockProductRepository implements ProductRepository {
-  async list(filters: ProductFilters, signal?: AbortSignal): Promise<ProductPage> {
-    await delay(`products:list:${JSON.stringify(filters)}`, signal);
-    if (filters.scenarioId === 'repository-error') throw new Error('The mock product service is unavailable.');
+export class MockProductRepository implements ProductRepository {
+  private readonly datasets = new Map<string, ReturnType<typeof generateAnalyticsDataset>>();
 
-    const parsed = z.array(productSchema).parse(baseProducts);
-    const scoped = parsed
-      .filter((product) => filters.authorisedCompanyIds.includes(product.companyId))
-      .filter((product) => product.marketplaceAccountIds.some((id) => filters.authorisedAccountIds.includes(id)))
-      .filter((product) => filters.context.companyId === 'all' || product.companyId === filters.context.companyId)
-      .filter((product) => filters.context.marketplace === 'all' || product.marketplaces.includes(filters.context.marketplace))
-      .filter((product) => filters.context.marketplaceAccountIds.length === 0 || product.marketplaceAccountIds.some((id) => filters.context.marketplaceAccountIds.includes(id)))
-      .map((product, index) => materializeProduct(product, isMissingCogs(index, filters.scenarioId)));
+  private datasetFor(input: ProductDetailQuery | ProductQuery) {
+    const shapeKey = JSON.stringify({
+      organisationId: input.organisation.id,
+      companies: input.companies.map((company) => company.id),
+      accounts: input.marketplaceAccounts.map((account) => [account.id, account.companyId, account.marketplace, account.status]),
+    });
+    let dataset = this.datasets.get(shapeKey);
+    if (!dataset) {
+      dataset = generateAnalyticsDataset({
+        organisation: input.organisation,
+        companies: input.companies,
+        marketplaceAccounts: input.marketplaceAccounts,
+      });
+      this.datasets.set(shapeKey, dataset);
+    }
+    return materializeApprovedCogsDataset(dataset, input.organisation.id);
+  }
 
-    const scenarioSearch = filters.scenarioId === 'no-search-results' ? 'definitely-no-product-matches-this' : filters.search;
-    const query = scenarioSearch.trim().toLowerCase();
-    const searched = query ? scoped.filter((product) => `${product.name} ${product.sku}`.toLowerCase().includes(query)) : scoped;
-    const start = filters.page * filters.pageSize;
-    return {
-      rows: searched.slice(start, start + filters.pageSize),
-      total: searched.length,
-      missingCogs: scoped.filter((product) => product.cogsStatus === 'missing').length,
+  private async ready(section: ProductRepositorySectionError['section'], query: ProductDetailQuery | ProductQuery, signal?: AbortSignal) {
+    await delay(`products:${section}:${JSON.stringify({ context: query.context, scenarioId: query.scenarioId, productId: 'productId' in query ? query.productId : undefined })}`, signal);
+    if (deterministicSectionFailure(section, query)) throw new ProductRepositorySectionError(section);
+  }
+
+  async list(query: ProductQuery, signal?: AbortSignal) {
+    await this.ready('list', query, signal);
+    return redactFinancialDisclosure(aggregateProductPage(this.datasetFor(query), query), financialDisclosureAllowed(query));
+  }
+
+  async exportRows(query: ProductQuery, signal?: AbortSignal) {
+    await delay(`products:export:${JSON.stringify({ context: query.context, search: query.search, scenarioId: query.scenarioId })}`, signal);
+    if (query.scenarioId === 'repository-error') throw new ProductRepositorySectionError('list');
+    return redactFinancialDisclosure(aggregateProductExportRows(this.datasetFor(query), query), financialDisclosureAllowed(query));
+  }
+
+  async getById(query: ProductDetailQuery, signal?: AbortSignal) {
+    await this.ready('overview', query, signal);
+    return redactFinancialDisclosure(aggregateProductOverview(this.datasetFor(query), query), financialDisclosureAllowed(query));
+  }
+
+  async getProfitability(query: ProductDetailQuery, signal?: AbortSignal) {
+    await this.ready('profitability', query, signal);
+    return redactFinancialDisclosure(aggregateProductProfitability(this.datasetFor(query), query), financialDisclosureAllowed(query));
+  }
+
+  async getCosts(query: ProductDetailQuery, signal?: AbortSignal) {
+    await this.ready('costs', query, signal);
+    return aggregateProductCosts(this.datasetFor(query), query);
+  }
+
+  async getListings(query: ProductDetailQuery, signal?: AbortSignal) {
+    await this.ready('listings', query, signal);
+    return aggregateProductListings(this.datasetFor(query), query);
+  }
+
+  async getTransactions(query: ProductTransactionsQuery, signal?: AbortSignal) {
+    await this.ready('transactions', query, signal);
+    return redactFinancialDisclosure(aggregateProductTransactions(this.datasetFor(query), query, query.limit), financialDisclosureAllowed(query));
+  }
+
+  async getTrend(query: ProductDetailQuery, signal?: AbortSignal) {
+    await this.ready('trend', query, signal);
+    return redactFinancialDisclosure(aggregateProductTrend(this.datasetFor(query), query), financialDisclosureAllowed(query));
+  }
+
+  async getActivity(query: ProductDetailQuery, signal?: AbortSignal) {
+    await this.ready('activity', query, signal);
+    return aggregateProductActivity(this.datasetFor(query), query);
+  }
+
+  /** Locked Phase 1 compatibility adapter. New code must use getById. */
+  async get(id: string, context: AnalysisContext, scope: AccessScope, signal?: AbortSignal): Promise<ProductListItem | null> {
+    const query: ProductDetailQuery = {
+      productId: id,
+      context,
+      organisation,
+      scenarioId: 'healthy',
+      companies,
+      marketplaceAccounts,
+      authorisedCompanyIds: scope.authorisedCompanyIds,
+      authorisedAccountIds: scope.authorisedAccountIds,
+      reportingCurrency: organisation.reportingCurrency,
+      canViewSensitiveExpenses: true,
+      cogsReadiness: null,
     };
-  }
-
-  async get(id: string, _context: ProductFilters['context'], signal?: AbortSignal) {
     await delay(`products:get:${id}`, signal);
-    const index = baseProducts.findIndex((product) => product.id === id);
-    return index === -1 ? null : materializeProduct(baseProducts[index], index % 17 === 0);
+    const snapshot = createProductAnalyticsSnapshot(this.datasetFor(query), query);
+    const product = snapshot.accessibleProducts.find((candidate) => candidate.id === id);
+    return product ? buildProductListItem(snapshot, product) : null;
   }
 }
-
-export const productRepository: ProductRepository = new MockProductRepository();

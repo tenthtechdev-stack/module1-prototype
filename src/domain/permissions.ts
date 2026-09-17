@@ -1,4 +1,4 @@
-import type { SubscriptionStatus } from '@/src/domain/models';
+import type { ModuleEntitlementKey, SubscriptionStatus } from '@/src/domain/models';
 
 export const CAPABILITIES = [
   'profitability.view',
@@ -29,7 +29,6 @@ export const CAPABILITIES = [
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number];
-export type ModuleKey = 'analytics' | 'cogs' | 'expenses' | 'operations' | 'administration' | 'copilot' | 'platform';
 
 export interface RolePreset {
   id: string;
@@ -37,6 +36,9 @@ export interface RolePreset {
   description: string;
   surface: 'tenant' | 'platform';
   capabilities: Capability[];
+}
+
+export interface AssignmentScope {
   companyIds: 'all' | string[];
   accountIds: 'all' | string[];
 }
@@ -55,67 +57,53 @@ const tenantView: Capability[] = [
 
 export const ROLE_PRESETS: RolePreset[] = [
   {
-    id: 'owner',
-    label: 'Organisation Owner',
-    description: 'Full tenant access',
-    surface: 'tenant',
-    capabilities: CAPABILITIES.filter((capability) => !capability.startsWith('platform.')),
-    companyIds: 'all',
-    accountIds: 'all',
-  },
-  {
     id: 'admin',
     label: 'Organisation Admin',
-    description: 'People, companies and integrations',
+    description: 'Full tenant administration and analytics',
     surface: 'tenant',
-    capabilities: [...tenantView, 'companies.manage', 'marketplaces.manage', 'users.manage', 'roles.manage'],
-    companyIds: 'all',
-    accountIds: 'all',
+    capabilities: CAPABILITIES.filter((capability) => !capability.startsWith('platform.')),
+  },
+  {
+    id: 'company-manager',
+    label: 'Company Manager',
+    description: 'Two assigned companies with operational actions',
+    surface: 'tenant',
+    capabilities: [...tenantView, 'cogs.edit', 'expenses.view_sensitive', 'sync.retry'],
   },
   {
     id: 'finance',
-    label: 'Finance Manager',
+    label: 'Finance / Accounts',
     description: 'Profitability, COGS and expenses',
     surface: 'tenant',
     capabilities: [...tenantView, 'cogs.edit', 'cogs.import', 'cogs.approve', 'expenses.view_sensitive', 'expenses.edit'],
-    companyIds: 'all',
-    accountIds: 'all',
   },
   {
-    id: 'marketplace',
+    id: 'marketplace-manager',
     label: 'Marketplace Manager',
-    description: 'Assigned Amazon account only',
+    description: 'Assigned marketplace accounts only',
     surface: 'tenant',
     capabilities: ['profitability.view', 'products.view', 'transactions.view', 'reports.view', 'sync.view', 'sync.retry', 'copilot.use'],
-    companyIds: ['cmp-stock'],
-    accountIds: ['acct-amazon-uk'],
   },
   {
-    id: 'cogs',
-    label: 'COGS Manager',
-    description: 'Cost coverage and imports',
+    id: 'cost-user',
+    label: 'Purchasing / Cost User',
+    description: 'Product cost maintenance without broad financial access',
     surface: 'tenant',
-    capabilities: ['products.view', 'cogs.view', 'cogs.edit', 'cogs.import', 'cogs.approve', 'audit.view', 'copilot.use'],
-    companyIds: 'all',
-    accountIds: 'all',
+    capabilities: ['products.view', 'cogs.view', 'cogs.edit', 'cogs.import', 'copilot.use'],
   },
   {
-    id: 'operations',
-    label: 'Operations Manager',
-    description: 'Transactions and sync health',
+    id: 'analyst',
+    label: 'Analyst / Management Viewer',
+    description: 'Read-only commercial and sensitive financial analysis',
     surface: 'tenant',
-    capabilities: ['products.view', 'transactions.view', 'sync.view', 'sync.retry', 'marketplaces.manage', 'copilot.use'],
-    companyIds: 'all',
-    accountIds: 'all',
+    capabilities: [...tenantView, 'expenses.view_sensitive'],
   },
   {
     id: 'auditor',
-    label: 'Auditor',
+    label: 'Auditor / Read Only',
     description: 'Read-only financial review',
     surface: 'tenant',
     capabilities: tenantView.filter((capability) => capability !== 'copilot.use'),
-    companyIds: 'all',
-    accountIds: 'all',
   },
   {
     id: 'platform-admin',
@@ -123,38 +111,43 @@ export const ROLE_PRESETS: RolePreset[] = [
     description: 'Tenth Tech platform operations',
     surface: 'platform',
     capabilities: CAPABILITIES.filter((capability) => capability.startsWith('platform.')),
-    companyIds: [],
-    accountIds: [],
   },
 ];
 
-export const CAPABILITY_MODULE: Record<Capability, ModuleKey> = {
-  'profitability.view': 'analytics',
-  'products.view': 'analytics',
-  'transactions.view': 'analytics',
-  'cogs.view': 'cogs',
-  'cogs.edit': 'cogs',
-  'cogs.import': 'cogs',
-  'cogs.approve': 'cogs',
-  'expenses.view': 'expenses',
-  'expenses.view_sensitive': 'expenses',
-  'expenses.edit': 'expenses',
-  'reports.view': 'analytics',
-  'sync.view': 'operations',
-  'sync.retry': 'operations',
-  'companies.manage': 'administration',
-  'marketplaces.manage': 'administration',
-  'users.manage': 'administration',
-  'roles.manage': 'administration',
-  'billing.manage': 'administration',
-  'audit.view': 'administration',
-  'copilot.use': 'copilot',
-  'platform.organisations.view': 'platform',
-  'platform.entitlements.manage': 'platform',
-  'platform.integrations.manage': 'platform',
-  'platform.ai_usage.view': 'platform',
-  'platform.audit.view': 'platform',
+// Prototype principals keep data assignment separate from reusable role definitions.
+export const PREVIEW_ASSIGNMENTS: Record<string, AssignmentScope> = {
+  admin: { companyIds: 'all', accountIds: 'all' },
+  'company-manager': { companyIds: ['cmp-stock', 'cmp-proserve'], accountIds: 'all' },
+  finance: { companyIds: 'all', accountIds: 'all' },
+  'marketplace-manager': { companyIds: ['cmp-proserve'], accountIds: ['acct-proserve-amazon', 'acct-proserve-temu'] },
+  'cost-user': { companyIds: ['cmp-northbridge'], accountIds: ['acct-northbridge-amazon'] },
+  analyst: { companyIds: 'all', accountIds: 'all' },
+  auditor: { companyIds: 'all', accountIds: 'all' },
+  'platform-admin': { companyIds: [], accountIds: [] },
 };
+
+export const CAPABILITY_REQUIRED_MODULE: Partial<Record<Capability, ModuleEntitlementKey>> = {
+  'profitability.view': 'marketplace-profitability',
+  'products.view': 'marketplace-profitability',
+  'transactions.view': 'marketplace-profitability',
+  'cogs.view': 'marketplace-profitability',
+  'cogs.edit': 'marketplace-profitability',
+  'cogs.import': 'marketplace-profitability',
+  'cogs.approve': 'marketplace-profitability',
+  'expenses.view': 'marketplace-profitability',
+  'expenses.view_sensitive': 'marketplace-profitability',
+  'expenses.edit': 'marketplace-profitability',
+  'reports.view': 'marketplace-profitability',
+  'sync.view': 'marketplace-profitability',
+  'sync.retry': 'marketplace-profitability',
+  // Copilot is a permission-aware capability within Module 01. Future AI usage
+  // controls remain a separate concern rather than a synthetic business module.
+  'copilot.use': 'marketplace-profitability',
+};
+
+export const PROTOTYPE_ENABLED_MODULES = [
+  'marketplace-profitability',
+] as const satisfies readonly ModuleEntitlementKey[];
 
 export type AccessDecision =
   | { allowed: true }
@@ -166,8 +159,9 @@ export type AccessDecision =
 export interface AccessInput {
   capability: Capability;
   role: RolePreset;
+  assignment: AssignmentScope;
   subscriptionStatus: SubscriptionStatus;
-  entitlements: ReadonlySet<ModuleKey>;
+  entitlements: ReadonlySet<ModuleEntitlementKey>;
   companyId?: string;
   accountId?: string;
 }
@@ -178,8 +172,8 @@ export function evaluateAccess(input: AccessInput): AccessDecision {
     return { allowed: false, reason: 'subscription_restricted' };
   }
 
-  const moduleKey = CAPABILITY_MODULE[input.capability];
-  if (!input.entitlements.has(moduleKey)) {
+  const requiredModule = CAPABILITY_REQUIRED_MODULE[input.capability];
+  if (requiredModule && !input.entitlements.has(requiredModule)) {
     return { allowed: false, reason: 'module_not_entitled' };
   }
 
@@ -187,22 +181,12 @@ export function evaluateAccess(input: AccessInput): AccessDecision {
     return { allowed: false, reason: 'capability_missing' };
   }
 
-  if (input.companyId && input.role.companyIds !== 'all' && !input.role.companyIds.includes(input.companyId)) {
+  if (input.companyId && input.assignment.companyIds !== 'all' && !input.assignment.companyIds.includes(input.companyId)) {
     return { allowed: false, reason: 'assignment_out_of_scope' };
   }
-  if (input.accountId && input.role.accountIds !== 'all' && !input.role.accountIds.includes(input.accountId)) {
+  if (input.accountId && input.assignment.accountIds !== 'all' && !input.assignment.accountIds.includes(input.accountId)) {
     return { allowed: false, reason: 'assignment_out_of_scope' };
   }
 
   return { allowed: true };
 }
-
-export const ALL_MODULES = new Set<ModuleKey>([
-  'analytics',
-  'cogs',
-  'expenses',
-  'operations',
-  'administration',
-  'copilot',
-  'platform',
-]);

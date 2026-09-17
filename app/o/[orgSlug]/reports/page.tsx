@@ -1,2 +1,5 @@
-import { redirect } from 'next/navigation';
-export default async function Page({ params }: { params: Promise<{ orgSlug: string }> }) { const { orgSlug } = await params; redirect(`/o/${orgSlug}/reports/pnl`); }
+import { ReportsHub } from '@/src/features/reports/reports-hub';
+
+export default function Page() {
+  return <ReportsHub />;
+}

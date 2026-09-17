@@ -1,2 +1,4 @@
-import { OnboardingPage } from '@/src/components/pages/public-pages';
-export default function Page() { return <OnboardingPage step={6} title="Run the initial sync" description="Import marketplace transactions while keeping progress and data freshness visible." />; }
+import { SyncStep } from '@/src/features/onboarding/marketplace-sync-steps';
+import { SetupGuard } from '@/src/features/onboarding/basic-steps';
+
+export default function Page() { return <SetupGuard requires={['account', 'subscription', 'payment', 'organisation', 'companies', 'marketplaces']}><SyncStep /></SetupGuard>; }

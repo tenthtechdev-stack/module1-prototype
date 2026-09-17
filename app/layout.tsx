@@ -1,23 +1,13 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
-import { AppProviders } from '@/src/components/providers/app-providers';
+import { RuntimeBoundary } from '@/src/components/marketing/runtime-boundary';
 import './globals.css';
-
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
   title: 'Stock Supplies | Profitability workspace',
   description:
     'Multi-marketplace profitability, cost coverage, and operational health for Stock Supplies.',
+  icons: { icon: '/favicon.svg' },
   openGraph: {
     title: 'Stock Supplies',
     description: 'Marketplace profitability, made visible.',
@@ -39,10 +29,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <AppProviders>{children}</AppProviders>
+      <body>
+        <RuntimeBoundary>{children}</RuntimeBoundary>
       </body>
     </html>
   );

@@ -1,2 +1,14 @@
-import { FeaturePage } from '@/src/components/pages/feature-page';
-export default function Page() { return <FeaturePage eyebrow="Financial reports" title="Marketplace report" description="Amazon, eBay and Temu performance using one neutral financial language." capability="reports.view" />; }
+import { redirect } from 'next/navigation';
+
+export default async function Page({ params, searchParams }: {
+  params: Promise<{ orgSlug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const { orgSlug } = await params;
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(await searchParams)) {
+    if (Array.isArray(value)) value.forEach((item) => query.append(key, item));
+    else if (value !== undefined) query.set(key, value);
+  }
+  redirect(`/o/${orgSlug}/reports/marketplace-profitability${query.size ? `?${query}` : ''}`);
+}

@@ -1,27 +1,146 @@
-import { deriveProfitability } from '@/src/domain/calculations';
-import type { Company, MarketplaceAccount, Organisation, ProductListItem, ProductPerformance, Transaction } from '@/src/domain/models';
+import type {
+  Company,
+  MarketplaceAccount,
+  ModuleEntitlement,
+  Organisation,
+  ProductPerformance,
+  Subscription,
+  Transaction,
+  User,
+} from '@/src/domain/models';
 
 export const organisation: Organisation = {
   id: 'org-stock-supplies',
   slug: 'stock-supplies',
-  name: 'Stock Supplies',
+  name: 'Stock Supplies Group',
   reportingCurrency: 'GBP',
   timeZone: 'Europe/London',
 };
 
 export const companies: Company[] = [
   { id: 'cmp-stock', organisationId: organisation.id, name: 'Stock Supplies Ltd' },
-  { id: 'cmp-hygiene', organisationId: organisation.id, name: 'Hygiene Direct Ltd' },
-  { id: 'cmp-packaging', organisationId: organisation.id, name: 'Packaging Essentials Ltd' },
+  { id: 'cmp-proserve', organisationId: organisation.id, name: 'ProServe Packaging Ltd' },
+  { id: 'cmp-northbridge', organisationId: organisation.id, name: 'Northbridge Trade Supplies Ltd' },
 ];
 
 export const marketplaceAccounts: MarketplaceAccount[] = [
-  { id: 'acct-amazon-uk', companyId: 'cmp-stock', marketplace: 'amazon', displayName: 'Stock Supplies UK', status: 'connected', lastSuccessfulSyncAt: '2026-08-27T18:49:00Z' },
-  { id: 'acct-ebay-main', companyId: 'cmp-stock', marketplace: 'ebay', displayName: 'Stock Supplies eBay', status: 'connected', lastSuccessfulSyncAt: '2026-08-27T18:42:00Z' },
-  { id: 'acct-amazon-hygiene', companyId: 'cmp-hygiene', marketplace: 'amazon', displayName: 'Hygiene Direct Amazon', status: 'connected', lastSuccessfulSyncAt: '2026-08-27T18:46:00Z' },
-  { id: 'acct-temu-hygiene', companyId: 'cmp-hygiene', marketplace: 'temu', displayName: 'Hygiene Direct Temu', status: 'connected', lastSuccessfulSyncAt: '2026-08-27T18:28:00Z' },
-  { id: 'acct-ebay-packaging', companyId: 'cmp-packaging', marketplace: 'ebay', displayName: 'Packaging Essentials eBay', status: 'connected', lastSuccessfulSyncAt: '2026-08-27T18:41:00Z' },
-  { id: 'acct-temu-packaging', companyId: 'cmp-packaging', marketplace: 'temu', displayName: 'Packaging Essentials Temu', status: 'connected', lastSuccessfulSyncAt: '2026-08-27T18:33:00Z' },
+  { id: 'acct-stock-amazon', companyId: 'cmp-stock', marketplace: 'amazon', displayName: 'Stock Supplies Amazon UK', status: 'synced', lastSuccessfulSyncAt: '2026-08-27T18:49:00Z' },
+  { id: 'acct-stock-ebay', companyId: 'cmp-stock', marketplace: 'ebay', displayName: 'Stock Supplies eBay UK', status: 'synced', lastSuccessfulSyncAt: '2026-08-27T18:42:00Z' },
+  { id: 'acct-stock-temu', companyId: 'cmp-stock', marketplace: 'temu', displayName: 'Stock Supplies Temu UK', status: 'synced', lastSuccessfulSyncAt: '2026-08-27T18:36:00Z' },
+  { id: 'acct-proserve-amazon', companyId: 'cmp-proserve', marketplace: 'amazon', displayName: 'ProServe Amazon UK', status: 'synced', lastSuccessfulSyncAt: '2026-08-27T18:46:00Z' },
+  { id: 'acct-proserve-temu', companyId: 'cmp-proserve', marketplace: 'temu', displayName: 'ProServe Temu UK', status: 'synced', lastSuccessfulSyncAt: '2026-08-27T18:28:00Z' },
+  { id: 'acct-northbridge-amazon', companyId: 'cmp-northbridge', marketplace: 'amazon', displayName: 'Northbridge Amazon UK', status: 'synced', lastSuccessfulSyncAt: '2026-08-27T18:41:00Z' },
+];
+
+export const subscription: Subscription = {
+  id: 'sub-stock-supplies-test-plan',
+  organisationId: organisation.id,
+  status: 'active',
+  planName: 'Test Plan',
+  renewsAt: '2026-09-27',
+};
+
+export const moduleEntitlements: ModuleEntitlement[] = [
+  { organisationId: organisation.id, moduleKey: 'marketplace-profitability', enabled: true },
+];
+
+export const users: User[] = [
+  { id: 'usr-zara', organisationId: organisation.id, name: 'Zara Rahman', email: 'zara.rahman@stocksupplies.co.uk', jobTitle: 'Head of Commerce', roleId: 'admin', companyIds: 'all', marketplaceAccountIds: 'all' },
+  { id: 'usr-elliot', organisationId: organisation.id, name: 'Elliot Carter', email: 'elliot.carter@stocksupplies.co.uk', jobTitle: 'Group Finance Manager', roleId: 'finance', companyIds: 'all', marketplaceAccountIds: 'all' },
+  { id: 'usr-aisha', organisationId: organisation.id, name: 'Aisha Mahmood', email: 'aisha.mahmood@proserve.co.uk', jobTitle: 'Marketplace Manager', roleId: 'marketplace-manager', companyIds: ['cmp-proserve'], marketplaceAccountIds: ['acct-proserve-amazon', 'acct-proserve-temu'] },
+  { id: 'usr-daniel', organisationId: organisation.id, name: 'Daniel Price', email: 'daniel.price@northbridge.co.uk', jobTitle: 'Purchasing Lead', roleId: 'cost-user', companyIds: ['cmp-northbridge'], marketplaceAccountIds: ['acct-northbridge-amazon'] },
+  { id: 'usr-priya', organisationId: organisation.id, name: 'Priya Shah', email: 'priya.shah@stocksupplies.co.uk', jobTitle: 'Commercial Analyst', roleId: 'analyst', companyIds: 'all', marketplaceAccountIds: 'all' },
+];
+
+export interface WorkspaceFixture {
+  organisation: Organisation;
+  subscription: Subscription;
+  moduleEntitlements: ModuleEntitlement[];
+  companies: Company[];
+  marketplaceAccounts: MarketplaceAccount[];
+  users: User[];
+}
+
+const harbourHomewares: Organisation = {
+  id: 'org-harbour-homewares',
+  slug: 'harbour-homewares',
+  name: 'Harbour Homewares Group',
+  reportingCurrency: 'GBP',
+  timeZone: 'Europe/London',
+};
+
+const harbourCompanies: Company[] = [
+  { id: 'cmp-harbour-retail', organisationId: harbourHomewares.id, name: 'Harbour Homewares Retail Ltd' },
+  { id: 'cmp-harbour-direct', organisationId: harbourHomewares.id, name: 'Harbour Direct Commerce Ltd' },
+];
+
+const harbourAccounts: MarketplaceAccount[] = [
+  { id: 'acct-harbour-amazon', companyId: 'cmp-harbour-retail', marketplace: 'amazon', displayName: 'Harbour Homewares Amazon UK', status: 'synced', lastSuccessfulSyncAt: '2026-08-27T18:35:00Z' },
+  { id: 'acct-harbour-ebay', companyId: 'cmp-harbour-direct', marketplace: 'ebay', displayName: 'Harbour Direct eBay UK', status: 'synced', lastSuccessfulSyncAt: '2026-08-27T18:31:00Z' },
+];
+
+const brightforgeTools: Organisation = {
+  id: 'org-brightforge-tools',
+  slug: 'brightforge-tools',
+  name: 'Brightforge Tools Ltd',
+  reportingCurrency: 'GBP',
+  timeZone: 'Europe/London',
+};
+
+const brightforgeCompanies: Company[] = [
+  { id: 'cmp-brightforge', organisationId: brightforgeTools.id, name: 'Brightforge Tools Ltd' },
+];
+
+const brightforgeAccounts: MarketplaceAccount[] = [
+  { id: 'acct-brightforge-amazon', companyId: 'cmp-brightforge', marketplace: 'amazon', displayName: 'Brightforge Amazon UK', status: 'synced', lastSuccessfulSyncAt: '2026-08-27T18:22:00Z' },
+  { id: 'acct-brightforge-temu', companyId: 'cmp-brightforge', marketplace: 'temu', displayName: 'Brightforge Temu UK', status: 'synced', lastSuccessfulSyncAt: '2026-08-27T18:18:00Z' },
+];
+
+export const workspaceFixtures: readonly WorkspaceFixture[] = [
+  {
+    organisation,
+    subscription,
+    moduleEntitlements,
+    companies,
+    marketplaceAccounts,
+    users,
+  },
+  {
+    organisation: harbourHomewares,
+    subscription: {
+      id: 'sub-harbour-homewares-test-plan',
+      organisationId: harbourHomewares.id,
+      status: 'active',
+      planName: 'Test Plan',
+      renewsAt: '2026-10-04',
+    },
+    moduleEntitlements: [
+      { organisationId: harbourHomewares.id, moduleKey: 'marketplace-profitability', enabled: true },
+    ],
+    companies: harbourCompanies,
+    marketplaceAccounts: harbourAccounts,
+    users: [
+      { id: 'usr-harbour-nadia', organisationId: harbourHomewares.id, name: 'Nadia Clarke', email: 'nadia.clarke@harbourhomewares.co.uk', jobTitle: 'Commerce Director', roleId: 'admin', companyIds: 'all', marketplaceAccountIds: 'all' },
+    ],
+  },
+  {
+    organisation: brightforgeTools,
+    subscription: {
+      id: 'sub-brightforge-tools-test-plan',
+      organisationId: brightforgeTools.id,
+      status: 'active',
+      planName: 'Test Plan',
+      renewsAt: '2026-09-30',
+    },
+    moduleEntitlements: [
+      { organisationId: brightforgeTools.id, moduleKey: 'marketplace-profitability', enabled: true },
+    ],
+    companies: brightforgeCompanies,
+    marketplaceAccounts: brightforgeAccounts,
+    users: [
+      { id: 'usr-brightforge-owen', organisationId: brightforgeTools.id, name: 'Owen Mercer', email: 'owen.mercer@brightforgetools.co.uk', jobTitle: 'Managing Director', roleId: 'admin', companyIds: 'all', marketplaceAccountIds: 'all' },
+    ],
+  },
 ];
 
 const names = [
@@ -46,13 +165,24 @@ function productFor(index: number): ProductPerformance {
   const shippingPence = Math.round(grossRevenuePence * 0.054);
   const otherDirectCostsPence = Math.round(grossRevenuePence * 0.012);
   const allocatedExpensesPence = Math.round(grossRevenuePence * 0.028);
+  const sku = `${baseName.split(' ').map((part) => part[0]).join('').slice(0, 5).toUpperCase()}-${String(index + 1).padStart(3, '0')}`;
+  const name = index < names.length ? baseName : `${baseName} · ${['Case', 'Trade Pack', 'Bulk', 'Eco'][Math.floor(index / names.length) % 4]}`;
   return {
     id: `prd-${String(index + 1).padStart(4, '0')}`,
+    organisationId: organisation.id,
+    ownerCompanyId: company.id,
+    internalSku: sku,
+    title: name,
+    category: ['Cleaning', 'PPE', 'Packaging', 'Paper Hygiene'][index % 4],
+    brand: ['StockPro', 'ProServe', 'WorkGuard'][index % 3],
+    status: index % 19 === 0 ? 'inactive' : 'active',
+    createdAt: '2025-01-15T09:00:00.000Z',
+    updatedAt: '2026-08-27T14:30:00.000Z',
     companyId: company.id,
     marketplaceAccountIds: [account.id],
     marketplaces: [account.marketplace],
-    sku: `${baseName.split(' ').map((part) => part[0]).join('').slice(0, 5).toUpperCase()}-${String(index + 1).padStart(3, '0')}`,
-    name: index < names.length ? baseName : `${baseName} · ${['Case', 'Trade Pack', 'Bulk', 'Eco'][Math.floor(index / names.length) % 4]}`,
+    sku,
+    name,
     grossRevenuePence,
     refundsPence,
     cogsPence,
@@ -67,23 +197,7 @@ function productFor(index: number): ProductPerformance {
 
 export const baseProducts: ProductPerformance[] = Array.from({ length: 100 }, (_, index) => productFor(index));
 
-export function materializeProduct(product: ProductPerformance, cogsMissing: boolean): ProductListItem {
-  const adjusted = { ...product, cogsPence: cogsMissing ? null : product.cogsPence };
-  const profitability = deriveProfitability(adjusted);
-  const deltaBps = profitability.netProfitPence === null || product.priorProfitPence === null || product.priorProfitPence === 0
-    ? null
-    : Math.round(((profitability.netProfitPence - product.priorProfitPence) * 10_000) / product.priorProfitPence);
-  return {
-    ...adjusted,
-    netRevenuePence: profitability.netRevenuePence,
-    netProfitPence: profitability.netProfitPence,
-    marginBps: profitability.marginBps,
-    deltaBps,
-    cogsStatus: profitability.status === 'complete' ? 'complete' : 'missing',
-  };
-}
-
-export const transactions: Transaction[] = Array.from({ length: 2_700 }, (_, index) => {
+export const transactions: Transaction[] = Array.from({ length: 60 }, (_, index) => {
   const product = baseProducts[index % baseProducts.length];
   const dayOffset = index % 94;
   const grossRevenuePence = 2_400 + ((index * 7919) % 42_000);

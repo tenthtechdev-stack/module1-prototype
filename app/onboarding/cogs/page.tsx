@@ -1,2 +1,4 @@
-import { OnboardingPage } from '@/src/components/pages/public-pages';
-export default function Page() { return <OnboardingPage step={7} title="Check COGS readiness" description="Review cost coverage before profitability reporting becomes the source of truth." />; }
+import { CogsStep } from '@/src/features/onboarding/cogs-step';
+import { SetupGuard } from '@/src/features/onboarding/basic-steps';
+
+export default function Page() { return <SetupGuard requires={['account', 'subscription', 'payment', 'organisation', 'companies', 'marketplaces', 'sync']}><CogsStep /></SetupGuard>; }

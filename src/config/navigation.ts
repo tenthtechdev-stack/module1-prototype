@@ -34,25 +34,25 @@ export interface NavigationSection {
 
 export const tenantNavigation: NavigationSection[] = [
   {
-    label: 'Business analytics',
+    label: 'Main',
     items: [
       { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, capability: 'profitability.view' },
       { label: 'Products', href: '/products', icon: PackageSearch, capability: 'products.view' },
       { label: 'Transactions', href: '/transactions', icon: ReceiptText, capability: 'transactions.view' },
       { label: 'COGS', href: '/cogs', icon: Boxes, capability: 'cogs.view' },
       { label: 'Expenses', href: '/expenses', icon: CircleDollarSign, capability: 'expenses.view' },
-      { label: 'Reports', href: '/reports/pnl', icon: FileBarChart, capability: 'reports.view' },
+      { label: 'Reports', href: '/reports', icon: FileBarChart, capability: 'reports.view' },
     ],
   },
   {
-    label: 'Operational health',
+    label: 'Operations',
     items: [
       { label: 'Needs Attention', href: '/operations/attention', icon: Activity, capability: 'sync.view' },
       { label: 'Sync Health', href: '/operations/sync-health', icon: Gauge, capability: 'sync.view' },
     ],
   },
   {
-    label: 'Organisation admin',
+    label: 'Administration',
     items: [
       { label: 'Companies', href: '/admin/companies', icon: Building2, capability: 'companies.manage' },
       { label: 'Marketplace Accounts', href: '/admin/marketplace-accounts', icon: Store, capability: 'marketplaces.manage' },
@@ -70,9 +70,9 @@ export const platformNavigation: NavigationSection[] = [
     items: [
       { label: 'Dashboard', href: '/platform/dashboard', icon: LayoutDashboard, capability: 'platform.organisations.view' },
       { label: 'Organisations', href: '/platform/organisations', icon: Building2, capability: 'platform.organisations.view' },
-      { label: 'Integrations', href: '/platform/integrations', icon: PlugZap, capability: 'platform.integrations.manage' },
+      { label: 'Integration / Job Health', href: '/platform/integrations', icon: PlugZap, capability: 'platform.integrations.manage' },
       { label: 'AI Usage', href: '/platform/ai-usage', icon: WandSparkles, capability: 'platform.ai_usage.view' },
-      { label: 'Audit', href: '/platform/audit', icon: KeyRound, capability: 'platform.audit.view' },
+      { label: 'Platform Audit', href: '/platform/audit', icon: KeyRound, capability: 'platform.audit.view' },
     ],
   },
 ];

@@ -1,22 +1,30 @@
 {
-  "name": "sites-project",
+  "name": "stock-supplies-module-01",
   "version": "0.1.0",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "vinext dev",
-    "build": "vinext build",
-    "start": "vinext start",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "typecheck": "tsc --noEmit",
-    "test": "node scripts/validate-foundation.mjs",
-    "check": "npm run typecheck && npm run lint && npm test"
+    "test": "node scripts/validate-foundation.mjs && node scripts/validate-onboarding.mjs && node scripts/validate-analytics.mjs && node scripts/validate-products.mjs && node scripts/validate-cogs.mjs && node scripts/validate-product-groups.mjs && node scripts/validate-transactions.mjs",
+    "test:analytics": "node scripts/validate-analytics.mjs",
+    "test:products": "node scripts/validate-products.mjs",
+    "test:cogs": "node scripts/validate-cogs.mjs",
+    "test:product-groups": "node scripts/validate-product-groups.mjs",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "test:marketing": "node scripts/validate-marketing.mjs",
+    "capture:marketing": "node scripts/capture-marketing-assets.mjs",
+    "test:transactions": "node scripts/validate-transactions.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",
-    "@radix-ui/react-select": "^2.3.7",
+    "@radix-ui/react-dropdown-menu": "^2.1.24",
+    "@radix-ui/react-popover": "^1.1.23",
     "@radix-ui/react-tooltip": "^1.2.16",
     "@tanstack/react-query": "^5.102.7",
     "@tanstack/react-table": "^9.2.3",
@@ -25,26 +33,19 @@
     "next": "16.2.6",
     "react": "19.2.6",
     "react-dom": "19.2.6",
+    "read-excel-file": "^9.3.10",
+    "recharts": "^3.10.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "1.37.1",
-    "@cloudflare/workers-types": "4.20260515.1",
-    "@openai/sites-vite-plugin": "^0.1.0 || ^0.2.0",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
-    "@vitejs/plugin-react": "6.0.2",
-    "@vitejs/plugin-rsc": "0.5.26",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
-    "react-server-dom-webpack": "19.2.6",
     "tailwindcss": "4.2.1",
-    "typescript": "5.9.3",
-    "vinext": "1.0.0-beta.3",
-    "vite": "8.0.13",
-    "wrangler": "4.92.0"
+    "typescript": "5.9.3"
   },
   "type": "module"
 }

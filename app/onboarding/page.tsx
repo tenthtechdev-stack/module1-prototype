@@ -1,2 +1,3 @@
-import { redirect } from 'next/navigation';
-export default function Page() { redirect('/onboarding/subscription'); }
+import { OnboardingResumePage } from '@/src/features/onboarding/resume-page';
+
+export default function Page() { return <OnboardingResumePage />; }

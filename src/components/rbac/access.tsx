@@ -1,16 +1,41 @@
 'use client';
 
 import { AlertTriangle, CreditCard, LockKeyhole, PackageX } from 'lucide-react';
-import { evaluateAccess, type AccessDecision, type Capability } from '@/src/domain/permissions';
+import { ROLE_PRESETS, evaluateAccess, type AccessDecision, type Capability } from '@/src/domain/permissions';
+import type { ModuleEntitlementKey } from '@/src/domain/models';
 import { usePrototype } from '@/src/components/providers/prototype-provider';
+import { useOptionalAnalysisContext } from '@/src/components/providers/analysis-context-provider';
+
+export function useAccessRuntime() {
+  const { enabled: prototypeEnabled, role: prototypeRole, assignment: prototypeAssignment, runtime } = usePrototype();
+  const workspace = useOptionalAnalysisContext()?.workspace;
+  const activeUser = workspace?.activeUser ?? null;
+  const role = !prototypeEnabled && activeUser
+    ? ROLE_PRESETS.find((item) => item.surface === 'tenant' && item.id === activeUser.roleId) ?? prototypeRole
+    : prototypeRole;
+  const assignment = !prototypeEnabled && activeUser ? {
+    companyIds: activeUser.companyIds,
+    accountIds: activeUser.marketplaceAccountIds,
+  } : prototypeAssignment;
+  const entitlements = !prototypeEnabled && workspace
+    ? new Set<ModuleEntitlementKey>(workspace.entitlements.filter((entitlement) => entitlement.enabled).map((entitlement) => entitlement.moduleKey))
+    : new Set(runtime.entitlements);
+  return {
+    role,
+    assignment,
+    subscriptionStatus: prototypeEnabled ? runtime.subscriptionStatus : workspace?.subscription.status ?? runtime.subscriptionStatus,
+    entitlements,
+  };
+}
 
 export function useAccess(capability: Capability, target?: { companyId?: string; accountId?: string }) {
-  const { role, runtime } = usePrototype();
+  const { role, assignment, subscriptionStatus, entitlements } = useAccessRuntime();
   return evaluateAccess({
     capability,
     role,
-    subscriptionStatus: runtime.subscriptionStatus,
-    entitlements: runtime.entitlements,
+    assignment,
+    subscriptionStatus,
+    entitlements,
     companyId: target?.companyId,
     accountId: target?.accountId,
   });
@@ -65,3 +90,8 @@ export function PermissionBoundary({ capability, children, fallback = null }: { 
   const decision = useAccess(capability);
   return decision.allowed ? children : fallback;
 }
+
+export function SubscriptionState() { return <AccessState decision={{ allowed: false, reason: 'subscription_restricted' }} />; }
+export function ModuleEntitlementState() { return <AccessState decision={{ allowed: false, reason: 'module_not_entitled' }} />; }
+export function PermissionState() { return <AccessState decision={{ allowed: false, reason: 'capability_missing' }} />; }
+export function AssignmentState() { return <AccessState decision={{ allowed: false, reason: 'assignment_out_of_scope' }} />; }

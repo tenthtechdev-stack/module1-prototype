@@ -1,0 +1,25 @@
+import Link from 'next/link';
+import { ArrowRight, ChevronRight, ShieldCheck } from 'lucide-react';
+import type { MarketingPage } from '@/src/content/marketing/pages';
+import { structuredData } from '@/src/content/marketing/seo';
+import { MarketingCTA } from './cta';
+import { ContactForm } from './contact-form';
+import { JsonLd } from './json-ld';
+import { ProductScreenshot } from './screenshot';
+import { CheckList, CostHistory, CTASection, Eyebrow, FAQ, FinancialWaterfall, GroupExample, MarketplaceStrip } from './sections';
+
+export function SEOPage({ page }: { page: MarketingPage }) {
+  const isIntegration = page.slug.startsWith('integrations/');
+  const isFeature = !['about','contact','security','pricing'].includes(page.slug);
+  return <><JsonLd data={structuredData(`/${page.slug}`, page.eyebrow, page.faq, isFeature)} /><div className="m-container"><nav className="m-breadcrumbs" aria-label="Breadcrumb"><Link href="/">Home</Link><ChevronRight size={12} />{isIntegration && <><Link href="/marketplace-analytics">Marketplaces</Link><ChevronRight size={12} /></>}<span aria-current="page">{page.eyebrow.replace('Marketplaces / ', '')}</span></nav></div>
+    <section className={`m-seo-hero ${page.slug === 'contact' ? 'm-seo-contact-hero' : ''}`}><div className="m-container"><div className="m-seo-hero-copy"><Eyebrow>{page.eyebrow}</Eyebrow><h1>{page.headline}</h1><p>{page.intro}</p><div className="m-actions"><MarketingCTA id={`${page.slug.replaceAll('/','-')}-start-test-plan`} /><MarketingCTA href={page.slug === 'contact' ? '#enquiry' : '#workflow'} variant="text" id={`${page.slug.replaceAll('/','-')}-secondary`}>{page.slug === 'contact' ? 'Prepare an enquiry' : 'See how it works'}</MarketingCTA></div></div>{page.screenshot && <div className="m-seo-proof"><ProductScreenshot name={page.screenshot} priority /></div>}</div></section>
+    <div className="m-container">
+      {page.slug === 'pricing' && <section className="m-access-panel" aria-label="Module 01 access"><div><Eyebrow>Current module / Test Plan</Eyebrow><h2>Marketplace Profitability<br />& Analytics</h2><p className="m-price-status">Commercial pricing is being finalised.</p><p>After operational testing and operating-cost analysis, commercial plans will follow. No final subscription price is presented here.</p><MarketingCTA id="pricing-access-start-test-plan" /></div><CheckList items={['Amazon, eBay and Temu analytics', 'Profitability Dashboard and Products', 'Historical COGS, CSV / Excel / Paste imports', 'Bulk edits, financial approval and audit', 'Product Groups and inherited COGS', 'Contextual Copilot and Sync Health', 'Multi-company, roles and assignments']} /></section>}
+      {page.slug === 'contact' && <section className="m-contact-layout m-section" id="enquiry"><div><Eyebrow>What would be useful to understand?</Eyebrow><h2>Your channels.<br />Your costs.<br />Your questions.</h2><p>Share the context behind your enquiry. Module 01 focuses on explaining marketplace profitability and making Product costs easier to maintain.</p><div className="m-contact-topics"><span>01 / Module access</span><span>02 / A product walkthrough</span><span>03 / Multi-company requirements</span></div><Link className="m-inline-link" href="/pricing">Read about the Test Plan <ArrowRight size={16} /></Link></div><ContactForm /></section>}
+      {page.slug === 'marketplace-analytics' && <div className="m-hub-marketplaces"><MarketplaceStrip /></div>}
+      {page.slug === 'security' && <div className="m-security-principle"><ShieldCheck size={27} /><p><strong>Product principles, clearly stated.</strong> The access and approval model described here is not a claim of independent certification or a completed production security assessment.</p></div>}
+      <div className="m-editorial-sections">{page.sections.map((section, i) => <section className="m-editorial-section" key={section.title}><div className="m-editorial-title"><span className="m-section-number">0{i + 1} / {page.eyebrow.split(' / ')[0]}</span><h2>{section.title}</h2></div><div className="m-editorial-body">{section.body.map((body) => <p key={body}>{body}</p>)}{section.bullets && <CheckList items={section.bullets} />}</div>{i === 0 && page.slug === 'marketplace-profitability' && <div className="m-editorial-visual"><FinancialWaterfall /></div>}{i === 0 && page.slug === 'product-groups' && <div className="m-editorial-visual"><GroupExample /></div>}{i === 1 && page.slug === 'cogs-management' && <div className="m-editorial-visual"><CostHistory /></div>}</section>)}</div>
+      {page.workflow.length > 0 && <section className="m-workflow m-section" id="workflow"><Eyebrow>A practical workflow</Eyebrow><h2>From a question to a useful answer.</h2><ol>{page.workflow.map((step,i) => <li key={step.title}><span>0{i + 1}</span><h3>{step.title}</h3><p>{step.body}</p></li>)}</ol></section>}
+      <FAQ items={page.faq} /><section className="m-related"><Eyebrow>Keep exploring</Eyebrow><div>{page.relatedLinks.map((link) => <Link href={link.href} key={link.href}>{link.label}<ArrowRight size={19} /></Link>)}</div></section>
+    </div><CTASection /></>;
+}

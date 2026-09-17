@@ -1,2 +1,4 @@
-import { OnboardingPage } from '@/src/components/pages/public-pages';
-export default function Page() { return <OnboardingPage step={8} title="Invite your team" description="Assign capability-based roles and company or account scope to each person." />; }
+import { UsersStep } from '@/src/features/onboarding/users-complete-steps';
+import { SetupGuard } from '@/src/features/onboarding/basic-steps';
+
+export default function Page() { return <SetupGuard requires={['account', 'subscription', 'payment', 'organisation', 'companies', 'marketplaces', 'sync', 'cogs']}><UsersStep /></SetupGuard>; }

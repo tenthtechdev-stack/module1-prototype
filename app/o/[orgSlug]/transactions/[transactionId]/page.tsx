@@ -1,2 +1,8 @@
-import { FeaturePage } from '@/src/components/pages/feature-page';
-export default async function Page({ params }: { params: Promise<{ transactionId: string }> }) { const { transactionId } = await params; return <FeaturePage eyebrow="Transaction detail" title="Transaction breakdown" description={`A reconciling profitability breakdown for ${transactionId}.`} capability="transactions.view" />; }
+import { TransactionDetailPage } from '@/src/features/transactions/transaction-detail-page';
+
+export default async function Page({ params }: { params: Promise<{ transactionId: string }> }) {
+  const { transactionId } = await params;
+  let decodedId = transactionId;
+  try { decodedId = decodeURIComponent(transactionId); } catch { /* Malformed IDs resolve through the non-enumerating lookup. */ }
+  return <TransactionDetailPage transactionId={decodedId} />;
+}

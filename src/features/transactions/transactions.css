@@ -1,0 +1,64 @@
+.transactions-page { position: relative; display: grid; gap: 12px; min-width: 0; }
+.transactions-page > .page-heading { align-items: center; margin-bottom: 0; }
+.transactions-page > .ui-breadcrumbs { margin-bottom: -3px; }
+.transaction-header-actions { display: flex; align-items: center; gap: 7px; }
+.transaction-summary { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); overflow: hidden; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.transaction-summary article { display: flex; flex-direction: column; justify-content: center; min-width: 0; min-height: 84px; gap: 5px; padding: 12px 14px; border-right: 1px solid var(--border); }
+.transaction-summary article:last-child { border-right: 0; }
+.transaction-summary article.incomplete { background: #fffaf0; }
+.transaction-summary small { color: var(--text-muted); font-size: 8px; font-weight: 700; letter-spacing: .045em; text-transform: uppercase; }
+.transaction-summary strong { color: var(--text-primary); font-size: 18px; line-height: 1.1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.transaction-summary span { color: var(--text-secondary); font-size: 8px; line-height: 1.45; }
+.transaction-summary.loading .skeleton:first-child { height: 8px; width: 75px; }
+.transaction-summary.loading .skeleton:last-child { height: 22px; width: 96px; margin-top: 5px; }
+.transaction-notice { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; background: #fffaf0; border: 1px solid #eed7aa; border-radius: var(--radius); padding: 11px 13px; color: var(--warning); }
+.transaction-notice.error { background: #fff5f4; border-color: #efc8c5; color: var(--negative); }
+.transaction-notice > div { display: grid; gap: 3px; }
+.transaction-notice strong { font-size: 10px; }
+.transaction-notice span { font-size: 9px; line-height: 1.5; color: var(--text-secondary); }
+.transaction-notice a { white-space: nowrap; font-size: 10px; color: var(--primary); font-weight: 600; }
+.transaction-view-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0 0; }
+.transaction-view-bar > div { display: flex; align-items: center; gap: 7px; }
+.transaction-view-bar strong { font-size: 11px; }.transaction-view-bar span { font-size: 9px; color: var(--text-muted); }
+.transaction-help { display: inline-flex; align-items: center; gap: 5px; border: 0; background: none; padding: 4px; font-size: 9px; color: var(--text-secondary); cursor: help; }
+.transaction-quick-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.transaction-quick-filters button { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; padding: 4px 9px; border: 1px solid var(--border); border-radius: 5px; color: var(--text-secondary); background: var(--surface); font-size: 9px; cursor: pointer; }
+.transaction-quick-filters button[aria-pressed="true"] { color: var(--primary); background: var(--surface-selected); border-color: #b8c9f4; font-weight: 650; }
+.transaction-filters { display: flex; align-items: end; gap: 9px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.transaction-filter-fields { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; flex: 1; min-width: 0; }
+.transaction-filter-fields > label { display: grid; flex: 1 1 120px; min-width: 100px; max-width: 250px; gap: 4px; }
+.transaction-filter-fields > label:first-child { flex-basis: 185px; }
+.transaction-filter-fields > label > span { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+.transaction-filter-fields .ui-select { min-width: 0; width: 100%; height: 31px; font-size: 9px; text-overflow: ellipsis; }
+.transaction-mobile-filters { display: none; }
+.transaction-cost-record-filter { display: flex; align-items: center; gap: 6px; width: fit-content; max-width: 100%; padding: 5px 8px; background: var(--surface-selected); color: var(--primary); border: 1px solid #cad7f5; border-radius: 5px; font-size: 10px; }.transaction-cost-record-filter code { max-width: 260px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; }.transaction-cost-record-filter button { display: inline-flex; border: 0; background: none; color: inherit; padding: 3px; cursor: pointer; }
+.transaction-filter-sheet { display: grid; gap: 16px; }.transaction-filter-sheet .transaction-filter-fields { display: grid; grid-template-columns: 1fr; gap: 13px; }.transaction-filter-sheet .transaction-filter-fields > label { max-width: none; }
+.transactions-page .enterprise-grid .transaction-identity { min-height: 45px; gap: 8px; }
+.transaction-identity > span { display: grid; min-width: 0; gap: 2px; }.transaction-identity strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }.transaction-identity small { overflow: hidden; text-overflow: ellipsis; font-size: 8px; color: var(--text-muted); }
+.transaction-date { white-space: nowrap; font-size: 9px; }.transaction-account { display: block; max-width: 175px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 9px; }
+.transaction-unknown { color: var(--warning); font-size: 9px; font-weight: 550; }
+.transaction-fees { display: inline-flex; align-items: center; gap: 5px; }.transaction-fees svg { color: var(--warning); }
+.transaction-profit-link { text-decoration: none; color: var(--primary); }.transaction-profit-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.transaction-group-link { display: inline-flex; align-items: center; gap: 5px; color: var(--primary); }
+.transaction-updating { position: fixed; bottom: 24px; right: 26px; z-index: 9; display: flex; align-items: center; gap: 6px; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-popover); font-size: 10px; color: var(--text-secondary); }
+.transaction-footnote { display: flex; gap: 6px; align-items: flex-start; color: var(--text-muted); font-size: 9px; line-height: 1.5; margin: 0; }.transaction-footnote > svg { flex-shrink: 0; }
+.transaction-empty-source { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 56px 20px; text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.transaction-empty-source > svg { color: var(--primary); }.transaction-empty-source h2 { margin: 0; font-size: 17px; }.transaction-empty-source p { max-width: 450px; margin: 0; color: var(--text-secondary); font-size: 12px; line-height: 1.65; }.transaction-empty-source small { color: var(--text-muted); }
+@media (max-width: 1200px) { .transaction-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }.transaction-summary article:nth-child(3) { border-right: 0; }.transaction-summary article:nth-child(-n+3) { border-bottom: 1px solid var(--border); }.transaction-filters { align-items: center; }.transaction-filter-fields > label { flex-basis: 140px; } }
+@media (min-width: 761px) and (max-width: 1100px) {
+  .transactions-page .enterprise-grid .column-account, .transactions-page .enterprise-grid .column-quantity, .transactions-page .enterprise-grid .column-refunds, .transactions-page .enterprise-grid .column-cogs, .transactions-page .enterprise-grid .column-fees, .transactions-page .enterprise-grid .column-advertising, .transactions-page .enterprise-grid .column-shipping { display: none; }
+  .transactions-page .enterprise-grid table { width: auto !important; min-width: 1080px; }
+}
+@media (max-width: 760px) {
+  .transactions-page { gap: 11px; }.transactions-page > .ui-breadcrumbs { display: none; }.transactions-page > .page-heading { align-items: flex-start; }.transaction-header-actions { width: 100%; flex-wrap: wrap; }
+  .transaction-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-inline: -14px; border-inline: 0; border-radius: 0; }.transaction-summary article { min-height: 78px; padding: 11px 13px; }.transaction-summary article:nth-child(3) { border-right: 1px solid var(--border); }.transaction-summary article:nth-child(2n) { border-right: 0; }.transaction-summary article:nth-child(-n+4) { border-bottom: 1px solid var(--border); }.transaction-summary strong { font-size: 18px; }
+  .transaction-view-bar { flex-wrap: wrap; }.transaction-help { padding-left: 0; }.transaction-view-bar span { font-size: 8px; }.transaction-quick-filters { gap: 5px; }.transaction-quick-filters button { min-height: 32px; font-size: 10px; }
+  .transaction-desktop-filters { display: none; }.transaction-mobile-filters { display: flex; }.transaction-mobile-filters > button { width: 100%; justify-content: center; }
+  .transaction-notice { grid-template-columns: auto minmax(0, 1fr); }.transaction-notice a { grid-column: 2; }.transaction-notice span { font-size: 10px; }
+  .transactions-page .enterprise-grid tbody tr { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin-bottom: 9px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); gap: 6px 9px; }
+  .transactions-page .enterprise-grid td { border: 0; min-width: 0; padding: 3px 0; }.transactions-page .enterprise-grid .table-scroll { padding: 10px; background: var(--background); }.transactions-page .enterprise-grid .transaction-identity { min-height: 48px; }.transaction-identity strong { white-space: normal; font-size: 12px; line-height: 1.4; }.transaction-identity small { font-size: 9px; }.transaction-date { font-size: 11px; }
+  .transactions-page .enterprise-grid td.column-status { grid-column: 1; }.transactions-page .enterprise-grid td.column-__row-actions { grid-column: 2; justify-self: end; }.transactions-page .enterprise-grid td.column-__row-actions .mobile-cell-label { display: none; }
+  .transactions-page .enterprise-grid .transaction-profit-link, .transactions-page .enterprise-grid .numeric { font-size: 12px; }.transactions-page .grid-footer { gap: 10px; }.transactions-page .grid-footer > div { margin-left: auto; }
+  .transaction-updating { bottom: 18px; right: 15px; }.transaction-empty-source { padding: 38px 16px; }.transaction-empty-source h2 { font-size: 16px; }.transaction-filter-sheet .ui-select { height: 38px; font-size: 12px; }
+  .transaction-cost-record-filter { flex-wrap: wrap; }.transaction-cost-record-filter code { max-width: 190px; }
+}

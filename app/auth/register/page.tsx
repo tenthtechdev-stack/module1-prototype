@@ -1,2 +1,5 @@
-import { AuthPage } from '@/src/components/pages/public-pages';
-export default function Page() { return <AuthPage type="register" />; }
+import { RegistrationRouteExperience } from '@/src/features/auth/auth-routes';
+
+export default function Page() {
+  return <RegistrationRouteExperience />;
+}

@@ -11,7 +11,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
       <a className="skip-link" href="#main-content">Skip to content</a>
       <AppHeader platform mobileNavigation={<MobileNavigation sections={platformNavigation} platform />} />
       <aside className="sidebar platform-sidebar" aria-label="Platform navigation">
-        <div><span className="platform-badge">Platform admin</span><NavigationList sections={platformNavigation} /></div>
+        <div><span className="platform-badge">Tenth Tech Platform Administration</span><NavigationList sections={platformNavigation} /></div>
         <div className="operator-card"><span className="avatar-button">ZR</span><div><strong>Zara Rahman</strong><small>Tenth Tech operator</small></div></div>
       </aside>
       <div className="workspace platform-workspace"><main id="main-content" className="main-content">{children}</main></div>
