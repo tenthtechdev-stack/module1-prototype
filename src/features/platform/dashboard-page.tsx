@@ -1,0 +1,27 @@
+'use client';
+
+import Link from 'next/link';
+import { ArrowRight, Building2, CheckCircle2, Store, Users, Activity, Sparkles, Layers3, ShieldCheck } from 'lucide-react';
+import { usePlatform } from './platform-context';
+import { PlatformPage, PlatformPanel, StatusBadge, OrganisationLink, formatPlatformDate } from './platform-ui';
+
+export function PlatformDashboardPage() {
+  const { organisations, jobs, audit, usage } = usePlatform();
+  const issues = jobs.filter(job => ['Failed', 'Delayed', 'Authentication Required'].includes(job.status));
+  const metrics = [
+    { label: 'Organisations', value: organisations.length, detail: 'Across the platform', icon: Building2, href: '/platform/organisations' },
+    { label: 'Active organisations', value: organisations.filter(org => org.status === 'Active').length, detail: 'Organisation lifecycle', icon: CheckCircle2, href: '/platform/organisations?status=Active' },
+    { label: 'Companies', value: organisations.reduce((sum, org) => sum + org.companies.length, 0), detail: 'Within customer organisations', icon: Users, href: '/platform/organisations' },
+    { label: 'Marketplace accounts', value: organisations.reduce((sum, org) => sum + org.accounts.length, 0), detail: 'Amazon · eBay · Temu', icon: Store, href: '/platform/integrations' },
+  ];
+  const activeModuleSubscriptions = organisations.filter(org => org.subscription.status === 'active' && org.modules.includes('marketplace-profitability')).length;
+  return <PlatformPage title="Platform Dashboard" description="Operate and support customer organisations across Stock Supplies." actions={<Link className="ui-button primary" href="/platform/organisations">View organisations<ArrowRight size={15} /></Link>}>
+    <section className="platform-overview"><div><span className="platform-overview-icon"><ShieldCheck size={23} /></span><div><h2>Platform operations</h2><p>{issues.length ? `${issues.length} marketplace connections need attention. Customer lifecycle and access controls are ready to review.` : 'All marketplace connections are healthy. Customer lifecycle and access controls are ready to review.'}</p></div></div><StatusBadge status={issues.length ? 'Needs attention' : 'Healthy'} /></section>
+    <div className="platform-stat-grid">{metrics.map(metric => <Link href={metric.href} className="platform-stat" key={metric.label}><span><small>{metric.label}</small><metric.icon size={18} /></span><strong>{metric.value}</strong><p>{metric.detail}</p></Link>)}</div>
+    <div className="platform-three-col"><Link href="/platform/subscriptions" className="platform-compact-stat"><Layers3 size={20} /><div><strong>{activeModuleSubscriptions}</strong><span>Active Module 01 subscriptions</span></div><ArrowRight size={15} /></Link><Link href="/platform/integrations" className="platform-compact-stat"><Activity size={20} /><div><strong>{issues.length}</strong><span>Sync issues to review</span></div><ArrowRight size={15} /></Link><Link href="/platform/ai-usage" className="platform-compact-stat"><Sparkles size={20} /><div><strong>{usage.filter(item => Date.parse(item.at) >= Date.parse('2026-08-21T00:00:00Z') && Date.parse(item.at) <= Date.parse('2026-09-19T10:00:00Z')).reduce((sum, item) => sum + item.requests, 0).toLocaleString()}</strong><span>Illustrative Copilot requests · 30 days</span></div><ArrowRight size={15} /></Link></div>
+    <div className="platform-two-col"><PlatformPanel title="Organisations at a glance" description="Lifecycle, subscription and Module 01 access." actions={<Link className="platform-text-link" href="/platform/organisations">View all<ArrowRight size={13} /></Link>}><div className="platform-overview-list">{organisations.map(org => <div key={org.id}><span className="platform-org-mark">{org.name.split(' ').slice(0,2).map(word => word[0]).join('')}</span><div><OrganisationLink organisation={org} /><small>{org.companies.length} companies · {org.accounts.length} accounts</small><small>Test Plan: {org.subscription.status} · Module 01: {org.modules.includes('marketplace-profitability') ? 'Enabled' : 'Not enabled'}</small></div><StatusBadge status={org.status} /></div>)}</div></PlatformPanel>
+      <PlatformPanel title="Needs attention" description="A short queue for platform operators." actions={<Link className="platform-text-link" href="/platform/integrations">Sync Health<ArrowRight size={13} /></Link>}><div className="platform-attention-list">{issues.length ? issues.slice(0, 3).map(job => <Link key={job.id} href={`/platform/integrations?organisation=${job.organisationId}`}><span><StatusBadge status={job.status} /><strong>{job.accountName}</strong><small>{job.issue}</small></span><ArrowRight size={16} /></Link>) : <p className="platform-note">No sync issues. The platform is healthy.</p>}</div></PlatformPanel></div>
+    <PlatformPanel title="Recent platform activity" description="Actions taken by Tenth Tech operators." actions={<Link className="platform-text-link" href="/platform/audit">Open audit<ArrowRight size={13} /></Link>}><div className="platform-activity-list">{audit.slice(0,4).map(entry => <div key={entry.id}><span className="platform-activity-dot" /><div><strong>{entry.action}</strong><small>{organisations.find(org => org.id === entry.organisationId)?.name} · {entry.actor}</small></div><time>{formatPlatformDate(entry.at)}</time></div>)}</div></PlatformPanel>
+    <p className="platform-note">Tenth Tech Platform → Organisations → Companies → Marketplace Accounts. All metrics and operations on this surface are illustrative.</p>
+  </PlatformPage>;
+}

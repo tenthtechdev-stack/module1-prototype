@@ -54,11 +54,12 @@ export const tenantNavigation: NavigationSection[] = [
   {
     label: 'Administration',
     items: [
+      { label: 'Organisation', href: '/admin/organisation', icon: Building2, capability: 'companies.manage' },
       { label: 'Companies', href: '/admin/companies', icon: Building2, capability: 'companies.manage' },
       { label: 'Marketplace Accounts', href: '/admin/marketplace-accounts', icon: Store, capability: 'marketplaces.manage' },
       { label: 'Users', href: '/admin/users', icon: Users, capability: 'users.manage' },
       { label: 'Roles & Permissions', href: '/admin/roles', icon: ShieldCheck, capability: 'roles.manage' },
-      { label: 'Billing', href: '/admin/billing', icon: BadgePoundSterling, capability: 'billing.manage' },
+      { label: 'Billing & Modules', href: '/admin/billing', icon: BadgePoundSterling, capability: 'billing.manage' },
       { label: 'Audit', href: '/admin/audit', icon: ScrollText, capability: 'audit.view' },
     ],
   },
@@ -70,7 +71,9 @@ export const platformNavigation: NavigationSection[] = [
     items: [
       { label: 'Dashboard', href: '/platform/dashboard', icon: LayoutDashboard, capability: 'platform.organisations.view' },
       { label: 'Organisations', href: '/platform/organisations', icon: Building2, capability: 'platform.organisations.view' },
-      { label: 'Integration / Job Health', href: '/platform/integrations', icon: PlugZap, capability: 'platform.integrations.manage' },
+      { label: 'Subscriptions', href: '/platform/subscriptions', icon: BadgePoundSterling, capability: 'platform.entitlements.manage' },
+      { label: 'Modules', href: '/platform/modules', icon: Boxes, capability: 'platform.entitlements.manage' },
+      { label: 'Sync Health', href: '/platform/integrations', icon: PlugZap, capability: 'platform.integrations.manage' },
       { label: 'AI Usage', href: '/platform/ai-usage', icon: WandSparkles, capability: 'platform.ai_usage.view' },
       { label: 'Platform Audit', href: '/platform/audit', icon: KeyRound, capability: 'platform.audit.view' },
     ],

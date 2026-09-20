@@ -1,2 +1,3 @@
-import { FeaturePage } from '@/src/components/pages/feature-page';
-export default function Page() { return <FeaturePage eyebrow="Organisation administration" title="Users" description="People, invitation status and scoped role grants." capability="users.manage" />; }
+import { Suspense } from 'react';
+import { UsersPage } from '@/src/features/admin/users-page';
+export default function Page() { return <Suspense fallback={null}><UsersPage /></Suspense>; }

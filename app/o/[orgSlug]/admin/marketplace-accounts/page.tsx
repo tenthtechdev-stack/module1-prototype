@@ -1,2 +1,6 @@
-import { FeaturePage } from '@/src/components/pages/feature-page';
-export default function Page() { return <FeaturePage eyebrow="Organisation administration" title="Marketplace Accounts" description="Connections, owning companies and account assignments." capability="marketplaces.manage" />; }
+import { Suspense } from 'react';
+import { MarketplacesPage } from '@/src/features/admin/marketplaces-page';
+
+export default function Page() {
+  return <Suspense fallback={<div className="admin-page">Loading marketplace accounts…</div>}><MarketplacesPage /></Suspense>;
+}

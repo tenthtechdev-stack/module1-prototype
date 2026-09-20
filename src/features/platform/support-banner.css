@@ -1,0 +1,8 @@
+.platform-support-banner { display:flex; align-items:center; gap:12px; padding:13px 22px; background:#203c7d; color:white; border-bottom:1px solid #162c61; }
+.platform-support-banner > svg { flex-shrink:0; }
+.platform-support-banner > div { flex:1; display:grid; gap:4px; }
+.platform-support-banner strong { font-size:12px; }
+.platform-support-banner span { font-size:11px; line-height:1.5; color:#e0e8ff; }
+.platform-support-banner button { display:flex; align-items:center; justify-content:center; gap:7px; flex-shrink:0; border:1px solid #8095c4; background:transparent; color:white; border-radius:6px; padding:8px 10px; cursor:pointer; font-size:12px; }
+@media(max-width:760px) { .platform-support-banner { flex-wrap:wrap; padding:12px 14px; }.platform-support-banner button { margin-left:31px; } }
+
