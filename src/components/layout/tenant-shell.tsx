@@ -9,7 +9,7 @@ import { AppHeader } from '@/src/components/layout/app-header';
 import { ContextBar } from '@/src/components/layout/context-bar';
 import { MobileNavigation, NavigationList, OrganisationCard } from '@/src/components/layout/navigation';
 import { CopilotDrawer } from '@/src/components/copilot/copilot-drawer';
-import { PrototypeTools } from '@/src/components/prototype/prototype-tools';
+
 import { ErrorState, PageSkeleton } from '@/src/components/states/states';
 import { UnknownOrganisationState } from '@/src/components/states/unknown-organisation-state';
 import { useWorkspace } from '@/src/services/hooks/use-workspace';
@@ -36,7 +36,6 @@ function TenantShellContent({ orgSlug, children }: { orgSlug: string; children: 
           <OrganisationCard workspace={workspace} />
         </aside>
         <div className="workspace"><PlatformSupportBanner orgSlug={orgSlug} />{isAdmin ? <div className="admin-context-strip"><strong>Organisation workspace</strong><span>· {workspace.organisation.reportingCurrency} reporting</span><span>{workspace.organisation.timeZone}</span></div> : <ContextBar />}<main id="main-content" className="main-content">{!isAdmin ? <FinancialDisclosureNotice /> : null}{children}</main></div>
-        <PrototypeTools />
       </div>
     </AnalysisContextProvider>
   );

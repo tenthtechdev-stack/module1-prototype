@@ -35,6 +35,8 @@ import type {
   SelectTestPlanInput,
 } from '@/src/services/onboarding-contracts';
 import { services } from '@/src/services/runtime';
+import { ONBOARDING_STEPS } from '@/src/domain/onboarding';
+import { mockOnboardingStore } from '@/src/services/mock/onboarding-store';
 import { usePrototype } from '@/src/components/providers/prototype-provider';
 
 interface OnboardingContextValue {
@@ -68,6 +70,7 @@ interface OnboardingContextValue {
   resendInvitation: (invitationId: string, outcome?: 'success' | 'failure') => Promise<OnboardingInvitation>;
   getInvitation: (token: string) => Promise<OnboardingInvitation | null>;
   acceptInvitation: (input: AcceptInvitationInput) => Promise<InvitationAcceptance>;
+  previewStep: (step: OnboardingStep) => Promise<OnboardingSnapshot>;
   completeStep: (step: OnboardingStep) => Promise<OnboardingSnapshot>;
   skipStep: (step: OnboardingStep) => Promise<OnboardingSnapshot>;
   finish: () => Promise<OnboardingSnapshot>;
@@ -81,7 +84,7 @@ function messageFor(error: unknown) {
 }
 
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
-  const { scenarioId } = usePrototype();
+  const { enabled, scenarioId } = usePrototype();
   const [snapshot, setSnapshot] = useState<OnboardingSnapshot | null>(null);
   const [syncProgress, setSyncProgress] = useState<InitialSyncProgress | null>(null);
   const [costPreview, setCostPreview] = useState<CostImportPreview | null>(null);
@@ -91,7 +94,10 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   const mounted = useRef(true);
   const activeSessionId = snapshot?.session.id ?? null;
 
-  useEffect(() => () => { mounted.current = false; }, []);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   const loadSnapshot = useCallback(async (sessionId: string) => {
     let base = await services.onboarding.session.getSnapshot(sessionId, scenarioId);
@@ -301,6 +307,88 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     }),
     getInvitation: (token) => services.onboarding.invitations.getByToken(token),
     acceptInvitation: (input) => withAction('invitation-accept', () => services.onboarding.invitations.accept(input)),
+    previewStep: (step) => withAction('preview-step', async () => {
+      if (!enabled) throw new Error('Prototype navigation is disabled.');
+      setLoading(true);
+      setError(null);
+      try {
+        const demo = await services.workspace.getByOrganisationSlug('stock-supplies', 'healthy');
+        if (!demo) throw new Error('The prototype workspace could not be loaded.');
+        const { organisation: demoOrganisation, companies: demoCompanies, marketplaceAccounts: demoMarketplaces } = demo;
+        let session = await services.onboarding.session.getActiveSession();
+        if (!session) {
+          const registered = await services.onboarding.auth.register({
+            firstName: 'Prototype',
+            lastName: 'Reviewer',
+            email: 'reviewer@example.com',
+            password: 'password123',
+            confirmPassword: 'password123',
+            termsAccepted: true,
+          });
+          session = registered.session;
+        }
+        const sessionId = session.id;
+        const targetIndex = ONBOARDING_STEPS.indexOf(step);
+        const needs = (prerequisite: OnboardingStep) => targetIndex > ONBOARDING_STEPS.indexOf(prerequisite);
+        const base = await services.onboarding.session.getSnapshot(sessionId);
+
+        // Reuse normal mock actions and retain existing setup data when revisiting.
+        if (needs('subscription') && !session.pendingBilling) {
+          session = await services.onboarding.billing.selectTestPlan({ sessionId });
+        }
+        if (needs('payment') && session.pendingBilling?.paymentStatus !== 'accepted') {
+          session = await services.onboarding.billing.confirmTestPayment({
+            sessionId,
+            paymentMethodToken: 'pm_test_success',
+            billingEmail: base.account.email,
+            billingCountryCode: 'GB',
+          });
+        }
+        if (needs('organisation') && !base.organisation) {
+          const result = await services.onboarding.organisation.save({
+            sessionId,
+            name: demoOrganisation.name,
+            countryCode: 'GB',
+            reportingCurrency: demoOrganisation.reportingCurrency,
+            timeZone: demoOrganisation.timeZone,
+          });
+          session = result.session;
+        }
+        let company = base.companies[0];
+        if (needs('companies') && !company) {
+          company = await services.onboarding.companies.save({
+            sessionId,
+            legalName: demoCompanies[0].name,
+            countryCode: 'GB',
+            reportingCurrency: demoOrganisation.reportingCurrency,
+          });
+        }
+        if (needs('marketplaces') && !base.marketplaceAccounts.some((account) => account.connectionStatus === 'connected')) {
+          await services.onboarding.marketplaces.connect({
+            sessionId,
+            companyId: company.id,
+            marketplace: demoMarketplaces[0].marketplace,
+            displayName: demoMarketplaces[0].displayName,
+            regionCode: 'GB',
+          });
+        }
+        if (needs('sync')) await services.onboarding.sync.start(sessionId);
+        session = mockOnboardingStore.previewStep(sessionId, step);
+        if (needs('sync')) await services.onboarding.sync.getProgress(sessionId, 'healthy');
+        for (const prerequisite of ONBOARDING_STEPS.slice(0, targetIndex)) {
+          if (session.completedSteps.includes(prerequisite) || session.skippedSteps.includes(prerequisite)) continue;
+          session = prerequisite === 'cogs' || prerequisite === 'users'
+            ? await services.onboarding.coordinator.skip(sessionId, prerequisite)
+            : await services.onboarding.coordinator.goForward(sessionId, prerequisite);
+        }
+        if (step === 'complete') await services.onboarding.coordinator.finish(sessionId);
+        setCostPreview(null);
+        setSyncProgress(null);
+        return await loadSnapshot(sessionId);
+      } finally {
+        if (mounted.current) setLoading(false);
+      }
+    }),
     completeStep: (step) => withAction(`step-${step}`, async () => {
       const sessionId = requireSessionId();
       await services.onboarding.coordinator.goForward(sessionId, step);
@@ -325,7 +413,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         setError(null);
       }
     }),
-  }), [activeSessionId, costPreview, error, loadSnapshot, loading, pendingAction, refresh, refreshAfterFailure, requireSessionId, resume, scenarioId, snapshot, syncProgress, withAction]);
+  }), [activeSessionId, costPreview, enabled, error, loadSnapshot, loading, pendingAction, refresh, refreshAfterFailure, requireSessionId, resume, scenarioId, snapshot, syncProgress, withAction]);
 
   return <OnboardingContext.Provider value={value}>{children}</OnboardingContext.Provider>;
 }

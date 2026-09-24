@@ -11,9 +11,11 @@ import type {
   OnboardingMarketplaceAccount,
   OnboardingOrganisation,
   OnboardingSession,
+  OnboardingStep,
   RegisteredAccount,
   SyncDatasetProgress,
 } from '@/src/domain/onboarding';
+import { ONBOARDING_STEPS } from '@/src/domain/onboarding';
 import type { WorkspaceSnapshot } from '@/src/services/contracts';
 
 export const ONBOARDING_STORAGE_VERSION = 2 as const;
@@ -214,6 +216,32 @@ export class MockOnboardingStore {
     this.state = emptyState();
     this.hydrated = true;
     this.storage()?.removeItem(ONBOARDING_STORAGE_KEY);
+  }
+
+  /** Focus a reviewer-selected stage without weakening the normal step guards. */
+  previewStep(sessionId: string, step: OnboardingStep) {
+    return this.transaction((draft) => {
+      const session = requireSession(draft, sessionId);
+      session.currentStep = step;
+      if (step !== 'complete') {
+        session.status = 'in_progress';
+        session.completedAt = null;
+        session.completedSteps = session.completedSteps.filter((item) => item !== 'complete');
+      }
+      // Advance the existing simulation for later stages so COGS uses the same
+      // imported products as a sequential onboarding journey.
+      if (session.organisationId && ONBOARDING_STEPS.indexOf(step) > ONBOARDING_STEPS.indexOf('sync')) {
+        const sync = draft.syncs[session.organisationId];
+        if (sync) {
+          const elapsedStart = new Date(Date.parse(this.nowIso()) - 60_000).toISOString();
+          sync.startedAt = sync.startedAt < elapsedStart ? sync.startedAt : elapsedStart;
+          for (const account of sync.accounts) {
+            account.startedAt = account.startedAt < elapsedStart ? account.startedAt : elapsedStart;
+          }
+        }
+      }
+      return touchSession(this, session);
+    });
   }
 
   findWorkspaceBySlug(orgSlug: string): WorkspaceSnapshot | null {

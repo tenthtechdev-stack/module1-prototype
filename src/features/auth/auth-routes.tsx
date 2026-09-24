@@ -7,8 +7,9 @@ import { useOnboarding } from '@/src/components/providers/onboarding-provider';
 import { usePrototype } from '@/src/components/providers/prototype-provider';
 import { Alert, Spinner } from '@/src/components/ui/feedback';
 import { ROLE_PRESETS } from '@/src/domain/permissions';
-import type { OnboardingInvitation, OnboardingSnapshot, OnboardingStep } from '@/src/domain/onboarding';
+import type { OnboardingInvitation, OnboardingSnapshot } from '@/src/domain/onboarding';
 import { services } from '@/src/services/runtime';
+import { usePlatform } from '@/src/features/platform/platform-context';
 import {
   ForgotPasswordForm,
   InviteAcceptanceForm,
@@ -19,24 +20,7 @@ import {
   type InvitationSummary,
   type InviteAcceptanceField,
   type RegistrationField,
-  type SignInField,
 } from '@/src/features/auth/auth-experience';
-
-const STEP_ROUTES = {
-  account: '/auth/register',
-  subscription: '/onboarding/subscription',
-  payment: '/onboarding/payment',
-  organisation: '/onboarding/organisation',
-  companies: '/onboarding/companies',
-  marketplaces: '/onboarding/marketplaces',
-  sync: '/onboarding/sync',
-  cogs: '/onboarding/cogs',
-  users: '/onboarding/users',
-  complete: '/onboarding/complete',
-} as const satisfies Record<OnboardingStep, string>;
-
-const DEMO_ORGANISATION_SLUG = 'stock-supplies';
-const DEMO_PASSWORD = 'prototype';
 
 function messageFor(error: unknown) {
   return error instanceof Error && error.message
@@ -77,6 +61,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
 export function RegistrationRouteExperience() {
   const router = useRouter();
   const { register } = useOnboarding();
+  const { setRoleId } = usePrototype();
 
   return (
     <AuthShell>
@@ -90,6 +75,7 @@ export function RegistrationRouteExperience() {
             confirmPassword: input.password,
             termsAccepted: input.acceptedTerms,
           });
+          setRoleId('admin');
           router.push('/onboarding/subscription');
           return { ok: true };
         } catch (error) {
@@ -102,70 +88,20 @@ export function RegistrationRouteExperience() {
   );
 }
 
-function ownerDestination(snapshot: OnboardingSnapshot) {
-  if (snapshot.session.status === 'complete') {
-    return snapshot.organisation?.slug
-      ? `/o/${snapshot.organisation.slug}/dashboard`
-      : null;
-  }
-  return STEP_ROUTES[snapshot.session.currentStep];
-}
-
-function demoAliases(name: string, email: string) {
-  const domain = email.split('@')[1];
-  const firstName = name.trim().split(/\s+/)[0]?.toLowerCase();
-  return new Set([
-    email.trim().toLowerCase(),
-    firstName && domain ? `${firstName}@${domain.toLowerCase()}` : '',
-  ].filter(Boolean));
-}
-
 export function SignInRouteExperience() {
   const router = useRouter();
-  const { resume } = useOnboarding();
-  const { scenarioId } = usePrototype();
+  const { role, organisationSlug } = usePrototype();
 
   return (
     <AuthShell>
       <SignInForm
-        initialEmail="zara@stocksupplies.co.uk"
-        onSignIn={async ({ email, password }) => {
-          const normalisedEmail = email.trim().toLowerCase();
-          try {
-            const ownerSnapshot = await resume();
-            if (ownerSnapshot?.account.email.toLowerCase() === normalisedEmail && password.length >= 8) {
-              if (ownerSnapshot.session.ownerUserId) {
-                await services.onboarding.auth.activateOwner(ownerSnapshot.session.id);
-              }
-              const destination = ownerDestination(ownerSnapshot);
-              if (!destination) {
-                return fieldFailure<SignInField>(
-                  new Error('Your completed workspace could not be resolved. Please contact support.'),
-                );
-              }
-              router.push(destination);
-              return { ok: true };
-            }
-
-            const demoWorkspace = await services.workspace.getByOrganisationSlug(
-              DEMO_ORGANISATION_SLUG,
-              scenarioId,
-            );
-            const demoUser = demoWorkspace?.users.find((user) => demoAliases(user.name, user.email).has(normalisedEmail));
-            if (demoWorkspace && demoUser && password === DEMO_PASSWORD) {
-              router.push(`/o/${demoWorkspace.organisation.slug}/dashboard`);
-              return { ok: true };
-            }
-          } catch {
-            // Authentication deliberately returns one neutral error for repository
-            // and credential failures so the UI does not reveal account presence.
-          }
-
-          const message = 'The email or password is not recognised.';
-          return fieldFailure<SignInField>(new Error(message), {
-            email: 'Check your work email.',
-            password: 'Check your password.',
-          });
+        onSignIn={async () => {
+          // The form validates email format and a non-empty password. Mock access
+          // comes entirely from the selected prototype role, with no account lookup.
+          await new Promise<void>((resolve) => window.setTimeout(resolve, 350));
+          const tenantPage = role.capabilities.includes('profitability.view') ? 'dashboard' : 'products';
+          router.push(role.surface === 'platform' ? '/platform' : `/o/${organisationSlug}/${tenantPage}`);
+          return { ok: true };
         }}
       />
     </AuthShell>
@@ -279,12 +215,17 @@ function InvitationLoadingCard() {
 export function InviteAcceptanceRouteExperience({ token }: { token: string }) {
   const router = useRouter();
   const { snapshot, acceptInvitation, resume } = useOnboarding();
+  const { enabled, organisationSlug, setOrganisationSlug, setRoleId } = usePrototype();
+  const isDemoInvitation = enabled && token === 'demo';
+  const { organisations } = usePlatform();
+  const demoOrganisation = organisations.find((organisation) => organisation.slug === organisationSlug) ?? organisations[0];
   const [invitation, setInvitation] = useState<OnboardingInvitation | null>(null);
   const [invitationSnapshot, setInvitationSnapshot] = useState<OnboardingSnapshot | null>(null);
   const [resolved, setResolved] = useState(false);
   const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
+    if (isDemoInvitation) return;
     let cancelled = false;
     void Promise.all([
       services.onboarding.invitations.getByToken(token),
@@ -305,29 +246,48 @@ export function InviteAcceptanceRouteExperience({ token }: { token: string }) {
         if (!cancelled) setResolved(true);
     });
     return () => { cancelled = true; };
-  }, [resume, token]);
+  }, [isDemoInvitation, resume, token]);
 
   const tenantSnapshot = invitationSnapshot ?? snapshot;
 
   const summary = useMemo(
-    () => invitation ? invitationSummary(invitation, tenantSnapshot) : unknownInvitation(token),
-    [invitation, tenantSnapshot, token],
+    (): InvitationSummary => isDemoInvitation ? {
+      id: 'demo',
+      inviteeName: 'Alex Morgan',
+      email: 'alex.morgan@example.com',
+      organisationName: demoOrganisation.name,
+      roleName: ROLE_PRESETS.find((role) => role.id === 'finance')?.label ?? 'Finance / Accounts',
+      companyAssignments: 'all',
+      marketplaceAccountAssignments: 'all',
+      status: 'pending',
+    } : invitation ? invitationSummary(invitation, tenantSnapshot) : unknownInvitation(token),
+    [demoOrganisation, invitation, isDemoInvitation, tenantSnapshot, token],
   );
   const snapshotOrganisation = tenantSnapshot?.organisation ?? null;
-  const workspaceHref = snapshotOrganisation && snapshotOrganisation.id === invitation?.organisationId
-    ? `/o/${snapshotOrganisation.slug}/dashboard`
-    : undefined;
+  const workspaceHref = isDemoInvitation
+    ? `/o/${demoOrganisation.slug}/dashboard`
+    : snapshotOrganisation && snapshotOrganisation.id === invitation?.organisationId
+      ? `/o/${snapshotOrganisation.slug}/dashboard`
+      : undefined;
 
   return (
     <AuthShell>
-      {!resolved
+      {!resolved && !isDemoInvitation
         ? <InvitationLoadingCard />
         : <>
             {loadError ? <Alert tone="negative" title="Invitation lookup failed">{loadError}</Alert> : null}
             <InviteAcceptanceForm
+              key={token}
               invitation={summary}
               workspaceHref={workspaceHref}
               onJoin={async (input) => {
+                if (isDemoInvitation) {
+                  await new Promise<void>((resolve) => window.setTimeout(resolve, 350));
+                  setRoleId('finance');
+                  setOrganisationSlug(demoOrganisation.slug);
+                  router.replace(`/o/${demoOrganisation.slug}/dashboard`);
+                  return { ok: true };
+                }
                 if (!invitation || input.invitationId !== invitation.id) {
                   return fieldFailure<InviteAcceptanceField>(new Error('This invitation link is not valid.'));
                 }
@@ -339,7 +299,11 @@ export function InviteAcceptanceRouteExperience({ token }: { token: string }) {
                     lastName: name.lastName,
                     password: input.password,
                   });
-                  router.replace(`/o/${result.organisationSlug}/dashboard`);
+                  setRoleId(result.user.roleId);
+                  setOrganisationSlug(result.organisationSlug);
+                  const invitedRole = ROLE_PRESETS.find((role) => role.id === result.user.roleId);
+                  const tenantPage = invitedRole?.capabilities.includes('profitability.view') ? 'dashboard' : 'products';
+                  router.replace(`/o/${result.organisationSlug}/${tenantPage}`);
                   return { ok: true };
                 } catch (error) {
                   const message = messageFor(error);

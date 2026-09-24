@@ -236,12 +236,14 @@ async function validateServiceJourney() {
     termsAccepted: true,
   };
   await expectReject(auth.register({ ...registrationInput, firstName: '' }), 'validation', 'registration must reject incomplete owner details');
-  await expectReject(auth.register({ ...registrationInput, email: 'failure@registration.test' }), 'processing_failed', 'registration must expose a deterministic generic request failure');
+  const arbitraryRegistration = await auth.register({ ...registrationInput, email: 'failure@registration.test' });
+  expect(arbitraryRegistration.account.email === 'failure@registration.test', 'prototype registration must accept any valid email without hidden failure credentials');
+  const previousRegistration = await auth.register(registrationInput);
   const registration = await auth.register(registrationInput);
   const sessionId = registration.session.id;
   expect(registration.session.currentStep === 'subscription', 'registration must create an account-complete onboarding session');
   expect(!memory.get(modules.store.ONBOARDING_STORAGE_KEY)?.includes('Prototype123'), 'registration must never persist the password');
-  await expectReject(auth.register(registrationInput), 'conflict', 'registration must reject an existing owner email');
+  expect(registration.session.id !== previousRegistration.session.id, 'repeat prototype signup must create a fresh mock session without account-persistence requirements');
 
   await billing.selectTestPlan({ sessionId, billingEmail: registration.account.email, billingCountryCode: 'GB' });
   await expectReject(billing.confirmTestPayment({ sessionId, paymentMethodToken: 'pm_test_declined', billingEmail: registration.account.email, billingCountryCode: 'GB' }), 'payment_declined', 'payment must expose a declined test-card state');

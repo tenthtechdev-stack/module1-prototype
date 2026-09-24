@@ -7,7 +7,7 @@ import { Menu, X, Search, ShieldCheck } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { NavigationList } from '@/src/components/layout/navigation';
 import { platformNavigation } from '@/src/config/navigation';
-import { PrototypeTools } from '@/src/components/prototype/prototype-tools';
+
 import { usePrototype } from '@/src/components/providers/prototype-provider';
 import { PageSkeleton } from '@/src/components/states/states';
 
@@ -26,7 +26,7 @@ function PlatformShellContent({ children }: { children: React.ReactNode }) {
   const { roleId, enabled } = usePrototype();
   const [query, setQuery] = useState('');
   const router = useRouter();
-  if (roleId !== 'platform-admin') return <><main className="standalone-state platform-access"><ShieldCheck size={32} /><p className="eyebrow">Tenth Tech Platform</p><h1>Platform Super Admin access required</h1><p>This area is reserved for the Tenth Tech platform team.</p><p>{enabled ? 'Select Platform Super Admin in the prototype Role control to preview platform operations.' : 'Platform access is available through the development prototype role selector.'}</p><Link className="ui-button secondary" href="/o/stock-supplies/dashboard">Return to organisation workspace</Link></main><PrototypeTools /></>;
+  if (roleId !== 'platform-admin') return <><main className="standalone-state platform-access"><ShieldCheck size={32} /><p className="eyebrow">Tenth Tech Platform</p><h1>Platform Super Admin access required</h1><p>This area is reserved for the Tenth Tech platform team.</p><p>{enabled ? 'Select Platform Super Admin in the prototype Role control to preview platform operations.' : 'Platform access is reserved for authorised platform administrators.'}</p><Link className="ui-button secondary" href="/o/stock-supplies/dashboard">Return to organisation workspace</Link></main></>;
   return (
     <div className="app-shell platform-shell">
       <a className="skip-link" href="#main-content">Skip to content</a>
@@ -40,7 +40,6 @@ function PlatformShellContent({ children }: { children: React.ReactNode }) {
         <div className="operator-card"><span className="avatar-button">ZR</span><div><strong>Zara Rahman</strong><small>Platform Super Admin</small></div></div>
       </aside>
       <div className="workspace platform-workspace"><div className="platform-context-strip"><span><i /> Platform operations</span><span>Prototype · illustrative data · session-only changes</span></div><main id="main-content" className="main-content">{children}</main></div>
-      <PrototypeTools />
     </div>
   );
 }

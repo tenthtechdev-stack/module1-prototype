@@ -271,7 +271,7 @@ export function RegistrationForm({
         </Field>
       </div>
 
-      <Field label="Work email" hint={errors.email ? undefined : 'Prototype failure: failure@registration.test'} error={errors.email}>
+      <Field label="Work email" error={errors.email}>
         <Input
           type="email"
           inputMode="email"
@@ -319,7 +319,7 @@ export function RegistrationForm({
 
       <div className={`auth-terms${errors.terms ? ' invalid' : ''}`}>
         <Checkbox
-          label="I agree to the prototype terms and privacy notice"
+          label="I agree to the terms and privacy notice"
           checked={terms}
           disabled={submitting}
           aria-invalid={Boolean(errors.terms)}
@@ -385,13 +385,14 @@ export function SignInForm({
       <span className="auth-icon"><LockKeyhole size={20} /></span>
       <p className="eyebrow">Welcome back</p>
       <h2>Sign in to Stock Supplies</h2>
-      <p>Continue setup or open your authorised profitability workspace.</p>
+      <p>Open your profitability workspace and continue where you left off.</p>
 
       <Field label="Work email" error={errors.email}>
         <Input
           type="email"
           inputMode="email"
           autoComplete="email"
+          placeholder="you@company.com"
           value={email}
           disabled={submitting}
           aria-invalid={Boolean(errors.email)}
@@ -480,13 +481,14 @@ export function ForgotPasswordForm({
       <span className="auth-icon"><Mail size={20} /></span>
       <p className="eyebrow">Account recovery</p>
       <h2>Reset your password</h2>
-      <p>Enter your work email and we will send a mocked secure reset link.</p>
+      <p>Enter your work email to request a password reset link.</p>
 
       <Field label="Work email" error={emailError}>
         <Input
           type="email"
           inputMode="email"
           autoComplete="email"
+          placeholder="you@company.com"
           value={email}
           disabled={submitting}
           aria-invalid={Boolean(emailError)}

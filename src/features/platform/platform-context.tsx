@@ -21,7 +21,8 @@ interface PlatformContextValue extends PlatformState {
   setSubscriptionStatus: (id: string, status: PlatformOrganisation['subscription']['status']) => void;
   setModule: (id: string, key: ModuleEntitlementKey, enabled: boolean) => void;
   retryJob: (id: string) => void;
-  openWorkspace: (id: string) => void;
+  openWorkspace: (id: string, path?: string) => void;
+  clearSupportContext: () => void;
   returnToPlatform: () => void;
 }
 const PlatformContext = createContext<PlatformContextValue | null>(null);
@@ -35,7 +36,7 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<PlatformState>(initialState);
   const [ready, setReady] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const { roleId, setRoleId, setScenarioId } = usePrototype();
+  const { roleId, setRoleId, setScenarioId, setOrganisationSlug } = usePrototype();
   const { showToast } = useToast();
   const router = useRouter();
 
@@ -97,15 +98,19 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
       showToast('Prototype sync completed');
     }, 1400));
   }
-  function openWorkspace(id: string) {
-    if (roleId !== 'platform-admin') return;
+  function openWorkspace(id: string, path = '/dashboard') {
+    if (roleId !== 'platform-admin' && !state.supportOrganisationId) return;
     const org = state.organisations.find(item => item.id === id);
     if (!org) return;
     const entry = event(id, 'Platform Admin opened Organisation', 'Workspace access', 'Opened the existing tenant demo in clearly labelled Platform Admin support context.');
     setState(current => ({ ...current, supportOrganisationId: id, audit: [entry, ...current.audit] }));
     setScenarioId('healthy');
     setRoleId('admin');
-    router.push(`/o/${org.slug}/dashboard`);
+    setOrganisationSlug(org.slug);
+    router.push(`/o/${org.slug}${path}`);
+  }
+  function clearSupportContext() {
+    setState(current => ({ ...current, supportOrganisationId: null }));
   }
   function returnToPlatform() {
     const id = state.supportOrganisationId;
@@ -113,7 +118,7 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
     setRoleId('platform-admin');
     router.push(id ? `/platform/organisations/${id}` : '/platform/dashboard');
   }
-  return <PlatformContext.Provider value={{ ...state, usage: initialUsage, setOrganisationStatus, setSubscriptionStatus, setModule, retryJob, openWorkspace, returnToPlatform }}>{children}</PlatformContext.Provider>;
+  return <PlatformContext.Provider value={{ ...state, usage: initialUsage, setOrganisationStatus, setSubscriptionStatus, setModule, retryJob, openWorkspace, clearSupportContext, returnToPlatform }}>{children}</PlatformContext.Provider>;
 }
 export function usePlatform() {
   const value = useContext(PlatformContext);

@@ -1,15 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { CircleHelp, RotateCcw, TestTube2 } from 'lucide-react';
+import { CircleHelp } from 'lucide-react';
 import { useOnboarding } from '@/src/components/providers/onboarding-provider';
-import { usePrototype } from '@/src/components/providers/prototype-provider';
 import { Button } from '@/src/components/ui/actions';
 import { Popover } from '@/src/components/ui/overlays';
 import { ONBOARDING_STEPS, type InitialSyncProgress, type OnboardingSnapshot, type OnboardingStep } from '@/src/domain/onboarding';
-import { SCENARIOS, type ScenarioId } from '@/src/fixtures/scenarios';
 
 interface OnboardingStageDefinition {
   id: string;
@@ -134,13 +131,9 @@ function SetupHelp() {
 }
 
 export function OnboardingShell({ children }: { children: ReactNode }) {
-  const router = useRouter();
-  const { snapshot: providerSnapshot, syncProgress, loading, error, resume, reset: resetOnboarding } = useOnboarding();
+  const { snapshot: providerSnapshot, syncProgress, loading, error, resume } = useOnboarding();
   const snapshot: OnboardingSnapshot | null = providerSnapshot;
-  const { enabled, scenarioId, setScenarioId, reset: resetPrototype } = usePrototype();
   const resumeRequested = useRef(false);
-  const [resetting, setResetting] = useState(false);
-  const [resetError, setResetError] = useState<string | null>(null);
 
   useEffect(() => {
     if (resumeRequested.current) return;
@@ -175,20 +168,6 @@ export function OnboardingShell({ children }: { children: ReactNode }) {
       : snapshot
         ? 'Progress saved'
         : 'No saved setup';
-
-  async function handleReset() {
-    setResetting(true);
-    setResetError(null);
-    try {
-      await resetOnboarding();
-      resetPrototype();
-      router.replace('/auth/register');
-    } catch (resetFailure) {
-      setResetError(resetFailure instanceof Error ? resetFailure.message : 'Onboarding could not be reset.');
-    } finally {
-      setResetting(false);
-    }
-  }
 
   return (
     <div className="onboarding-shell onboarding-page">
@@ -231,14 +210,6 @@ export function OnboardingShell({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      {enabled ? (
-        <aside className="onboarding-development-tools" aria-label="Onboarding prototype tools">
-          <span className="onboarding-development-label"><TestTube2 size={14} aria-hidden="true" /> Prototype</span>
-          <label><span>Scenario</span><select value={scenarioId} onChange={(event) => setScenarioId(event.target.value as ScenarioId)}>{SCENARIOS.map((scenario) => <option key={scenario.id} value={scenario.id}>{scenario.label}</option>)}</select></label>
-          <Button size="compact" loading={resetting} onClick={() => { void handleReset(); }}><RotateCcw size={14} aria-hidden="true" /> Reset onboarding</Button>
-          {resetError ? <span className="onboarding-reset-error" role="alert">{resetError}</span> : null}
-        </aside>
-      ) : null}
     </div>
   );
 }

@@ -1,0 +1,4 @@
+# Public build-time flag for this frontend review prototype.
+# Set to "false" and rebuild to omit the global Prototype Controller.
+[build.environment]
+  NEXT_PUBLIC_PROTOTYPE_MODE = "true"

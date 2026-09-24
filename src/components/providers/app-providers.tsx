@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
+import { Suspense, useMemo } from 'react';
+import { PrototypeTools } from '@/src/components/prototype/prototype-tools';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { PrototypeProvider, usePrototype } from '@/src/components/providers/prototype-provider';
@@ -31,7 +32,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     <PrototypeProvider>
       <OnboardingProvider>
         <QueryRuntime>
-          <Tooltip.Provider delayDuration={300}><ToastProvider><PlatformProvider>{children}</PlatformProvider></ToastProvider></Tooltip.Provider>
+          <Tooltip.Provider delayDuration={300}><ToastProvider><PlatformProvider>{children}<Suspense fallback={null}><PrototypeTools /></Suspense></PlatformProvider></ToastProvider></Tooltip.Provider>
         </QueryRuntime>
       </OnboardingProvider>
     </PrototypeProvider>

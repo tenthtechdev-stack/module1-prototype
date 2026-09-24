@@ -1,4 +1,3 @@
-import { workspaceFixtures } from '@/src/fixtures/data';
 import type { AuthRepository, RegisterAccountInput, RegistrationResult } from '@/src/services/onboarding-contracts';
 import { mockDelay } from '@/src/services/mock/mock-delay';
 import { MockOnboardingStore, OnboardingServiceError, mockOnboardingStore } from '@/src/services/mock/onboarding-store';
@@ -28,18 +27,6 @@ export class MockAuthRepository implements AuthRepository {
     if (!input.termsAccepted) {
       throw new OnboardingServiceError('validation', 'Accept the terms to create an account.');
     }
-    if (email === 'failure@registration.test') {
-      throw new OnboardingServiceError('processing_failed', 'Account creation is temporarily unavailable. Please try again.');
-    }
-
-    const fixtureEmailExists = workspaceFixtures.some((workspace) => workspace.users.some((user) => user.email.toLowerCase() === email));
-    const state = this.store.read();
-    const storedEmailExists = Object.values(state.accounts).some((account) => account.email === email)
-      || Object.values(state.users).some((user) => user.email.toLowerCase() === email);
-    if (fixtureEmailExists || storedEmailExists) {
-      throw new OnboardingServiceError('conflict', 'An account already exists for this email address.');
-    }
-
     return this.store.transaction((draft) => {
       const now = this.store.nowIso();
       const accountId = this.store.createId('account');
