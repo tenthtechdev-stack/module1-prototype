@@ -6,36 +6,30 @@ import type { Marketplace } from '@/src/domain/models';
 import type { DatePresetKey } from '@/src/domain/date-ranges';
 import { useAnalysisContext } from '@/src/components/providers/analysis-context-provider';
 import { usePrototype } from '@/src/components/providers/prototype-provider';
-import { DateRangeControl } from '@/src/components/ui/forms';
+import { DateRangeControl, SelectMenu, type SelectMenuOption } from '@/src/components/ui/forms';
 import { Popover } from '@/src/components/ui/overlays';
 
-function ContextSelect({ label, value, onChange, children, icon, disabled = false }: { label: string; value: string; onChange: (value: string) => void; children: React.ReactNode; icon?: React.ReactNode; disabled?: boolean }) {
+function ContextSelect({ label, value, onChange, options, icon, disabled = false }: { label: string; value: string; onChange: (value: string) => void; options: SelectMenuOption[]; icon?: React.ReactNode; disabled?: boolean }) {
   return (
-    <label className="context-select">
+    <div className="context-select">
       <small>{label}</small>
-      <span>{icon}<select aria-label={label} value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}>{children}</select><ChevronDown size={12} /></span>
-    </label>
+      <SelectMenu ariaLabel={label} value={value} options={options} disabled={disabled} startIcon={icon} onValueChange={onChange} />
+    </div>
   );
 }
 
 function ContextControls({ mobile = false }: { mobile?: boolean }) {
   const { context, authorisedCompanies, availableAccounts, workspaceLoading, companyNameFor, setCompany, setMarketplace, setAccount, setDatePreset, setDateRange, datePreset } = useAnalysisContext();
+  const companyOptions = [{ value: 'all', label: 'All authorised companies' }, ...authorisedCompanies.map((company) => ({ value: company.id, label: company.name }))];
+  const marketplaceOptions = [{ value: 'all', label: 'Amazon + eBay + Temu' }, { value: 'amazon', label: 'Amazon' }, { value: 'ebay', label: 'eBay' }, { value: 'temu', label: 'Temu' }];
+  const accountOptions = [{ value: 'all', label: availableAccounts.length ? 'All matching accounts' : 'No matching accounts', disabled: availableAccounts.length === 0 }, ...availableAccounts.map((account) => ({ value: account.id, label: `${account.displayName} · ${companyNameFor(account.companyId)}` }))];
+  const dateOptions = [{ value: '30d', label: 'Last 30 days' }, { value: 'month', label: '1 Aug – 27 Aug 2026' }, { value: 'quarter', label: 'Quarter to date' }, { value: 'custom', label: `Custom: ${context.dateRange.from} – ${context.dateRange.to}`, disabled: true }];
   return (
     <div className={mobile ? 'context-controls mobile' : 'context-controls'}>
-      <ContextSelect label="Company" value={context.companyId} disabled={workspaceLoading} onChange={(value) => setCompany(value)}>
-        <option value="all">All authorised companies</option>
-        {authorisedCompanies.map((company) => <option key={company.id} value={company.id}>{company.name}</option>)}
-      </ContextSelect>
-      <ContextSelect label="Marketplace" value={context.marketplace} onChange={(value) => setMarketplace(value as Marketplace | 'all')}>
-        <option value="all">Amazon + eBay + Temu</option><option value="amazon">Amazon</option><option value="ebay">eBay</option><option value="temu">Temu</option>
-      </ContextSelect>
-      <ContextSelect label="Account" value={context.marketplaceAccountIds[0] ?? 'all'} disabled={workspaceLoading || availableAccounts.length === 0} onChange={setAccount}>
-        <option value="all">{availableAccounts.length ? 'All matching accounts' : 'No matching accounts'}</option>
-        {availableAccounts.map((account) => <option key={account.id} value={account.id}>{account.displayName} · {companyNameFor(account.companyId)}</option>)}
-      </ContextSelect>
-      <ContextSelect label="Date range" value={datePreset} onChange={(value) => value !== 'custom' && setDatePreset(value as DatePresetKey)} icon={<CalendarDays size={13} />}>
-        <option value="30d">Last 30 days</option><option value="month">1 Aug – 27 Aug 2026</option><option value="quarter">Quarter to date</option><option value="custom" disabled>Custom: {context.dateRange.from} – {context.dateRange.to}</option>
-      </ContextSelect>
+      <ContextSelect label="Company" value={context.companyId} options={companyOptions} disabled={workspaceLoading} onChange={setCompany} />
+      <ContextSelect label="Marketplace" value={context.marketplace} options={marketplaceOptions} onChange={(value) => setMarketplace(value as Marketplace | 'all')} />
+      <ContextSelect label="Account" value={context.marketplaceAccountIds[0] ?? 'all'} options={accountOptions} disabled={workspaceLoading || availableAccounts.length === 0} onChange={setAccount} />
+      <ContextSelect label="Date range" value={datePreset} options={dateOptions} onChange={(value) => value !== 'custom' && setDatePreset(value as DatePresetKey)} icon={<CalendarDays size={13} />} />
       {mobile ? <div className="context-custom-range"><small>Custom range</small><DateRangeControl from={context.dateRange.from} to={context.dateRange.to} onChange={setDateRange} /></div> : <Popover label="Custom dates" contentLabel="Choose a custom analysis date range"><div className="context-date-popover"><strong>Custom analysis range</strong><DateRangeControl from={context.dateRange.from} to={context.dateRange.to} onChange={setDateRange} /><small>Both dates are inclusive.</small></div></Popover>}
     </div>
   );

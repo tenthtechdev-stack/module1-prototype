@@ -6,6 +6,7 @@ import { PREVIEW_ASSIGNMENTS, ROLE_PRESETS, type AssignmentScope, type Capabilit
 import { SCENARIOS, getScenarioRuntime, type ScenarioId } from '@/src/fixtures/scenarios';
 import { COGS_MANAGEMENT_STORAGE_KEY } from '@/src/services/mock/cogs-management-store';
 import { ONBOARDING_STORAGE_KEY } from '@/src/services/mock/onboarding-store';
+import { resetMarketplaceStatusOverrides } from '@/src/services/mock/marketplace-status-store';
 
 interface PrototypeContextValue {
   enabled: boolean;
@@ -13,6 +14,7 @@ interface PrototypeContextValue {
   assignment: AssignmentScope;
   roleId: string;
   scenarioId: ScenarioId;
+  scenarioRevision: number;
   scenario: (typeof SCENARIOS)[number];
   runtime: ReturnType<typeof getScenarioRuntime>;
   realmKey: string;
@@ -87,6 +89,7 @@ export function PrototypeProvider({ children }: { children: React.ReactNode }) {
   }, [enabled]);
 
   const resetScenario = useCallback(() => {
+    resetMarketplaceStatusOverrides();
     setScenarioId(DEFAULT_SCENARIO);
     setScenarioRevision((revision) => revision + 1);
   }, [setScenarioId]);
@@ -117,7 +120,7 @@ export function PrototypeProvider({ children }: { children: React.ReactNode }) {
   const hasCapability = useCallback((capability: Capability) => role.capabilities.includes(capability), [role]);
 
   const value = useMemo<PrototypeContextValue>(() => ({
-    enabled, role, assignment, roleId, scenarioId, scenario, runtime,
+    enabled, role, assignment, roleId, scenarioId, scenarioRevision, scenario, runtime,
     realmKey: `${roleId}:${scenarioId}:${scenarioRevision}`,
     organisationSlug, setOrganisationSlug, setRoleId, setScenarioId, resetScenario, reset, hasCapability,
   }), [assignment, enabled, hasCapability, organisationSlug, reset, resetScenario, role, roleId, runtime, scenario, scenarioId, scenarioRevision, setOrganisationSlug, setRoleId, setScenarioId]);

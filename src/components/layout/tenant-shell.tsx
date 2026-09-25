@@ -14,6 +14,24 @@ import { ErrorState, PageSkeleton } from '@/src/components/states/states';
 import { UnknownOrganisationState } from '@/src/components/states/unknown-organisation-state';
 import { useWorkspace } from '@/src/services/hooks/use-workspace';
 import { PlatformSupportBanner } from '@/src/features/platform/support-banner';
+import { useVisibleAttentionIssues } from '@/src/features/operations/use-attention-issues';
+import type { WorkspaceSnapshot } from '@/src/services/contracts';
+
+function TenantWorkspaceShell({ orgSlug, workspace, isAdmin, children }: { orgSlug: string; workspace: WorkspaceSnapshot; isAdmin: boolean; children: React.ReactNode }) {
+  const { issues } = useVisibleAttentionIssues();
+  const attentionCount = issues.length;
+  return (
+    <div className="app-shell tenant-shell">
+      <a className="skip-link" href="#main-content">Skip to content</a>
+      <AppHeader organisationName={workspace.organisation.name} userName={workspace.activeUser?.name} orgSlug={orgSlug} mobileNavigation={<MobileNavigation sections={tenantNavigation} orgSlug={orgSlug} workspace={workspace} attentionCount={attentionCount} />} copilot={isAdmin ? undefined : <CopilotDrawer />} />
+      <aside className="sidebar" aria-label="Primary navigation">
+        <NavigationList sections={tenantNavigation} orgSlug={orgSlug} attentionCount={attentionCount} />
+        <OrganisationCard workspace={workspace} />
+      </aside>
+      <div className="workspace"><PlatformSupportBanner orgSlug={orgSlug} />{isAdmin ? <div className="admin-context-strip"><strong>Organisation workspace</strong><span>· {workspace.organisation.reportingCurrency} reporting</span><span>{workspace.organisation.timeZone}</span></div> : <ContextBar />}<main id="main-content" className="main-content">{!isAdmin ? <FinancialDisclosureNotice /> : null}{children}</main></div>
+    </div>
+  );
+}
 
 function TenantShellContent({ orgSlug, children }: { orgSlug: string; children: React.ReactNode }) {
   const workspaceQuery = useWorkspace(orgSlug);
@@ -28,15 +46,7 @@ function TenantShellContent({ orgSlug, children }: { orgSlug: string; children: 
   const workspace = workspaceQuery.data;
   return (
     <AnalysisContextProvider orgSlug={orgSlug} workspace={workspace}>
-      <div className="app-shell tenant-shell">
-        <a className="skip-link" href="#main-content">Skip to content</a>
-        <AppHeader organisationName={workspace.organisation.name} userName={workspace.activeUser?.name} orgSlug={orgSlug} mobileNavigation={<MobileNavigation sections={tenantNavigation} orgSlug={orgSlug} workspace={workspace} />} copilot={isAdmin ? undefined : <CopilotDrawer />} />
-        <aside className="sidebar" aria-label="Primary navigation">
-          <NavigationList sections={tenantNavigation} orgSlug={orgSlug} />
-          <OrganisationCard workspace={workspace} />
-        </aside>
-        <div className="workspace"><PlatformSupportBanner orgSlug={orgSlug} />{isAdmin ? <div className="admin-context-strip"><strong>Organisation workspace</strong><span>· {workspace.organisation.reportingCurrency} reporting</span><span>{workspace.organisation.timeZone}</span></div> : <ContextBar />}<main id="main-content" className="main-content">{!isAdmin ? <FinancialDisclosureNotice /> : null}{children}</main></div>
-      </div>
+      <TenantWorkspaceShell orgSlug={orgSlug} workspace={workspace} isAdmin={isAdmin}>{children}</TenantWorkspaceShell>
     </AnalysisContextProvider>
   );
 }

@@ -51,7 +51,7 @@ type ConnectionDraft = { accountId?: string; marketplace: Marketplace; companyId
 type AccountAction = { account: AdminAccount; type: 'pause' | 'resume' | 'disconnect' };
 
 export function MarketplacesPage() {
-  const { companies, accounts, setAccounts, recordAudit, companyName } = useAdmin();
+  const { companies, accounts, setAccounts, publishAccountStatus, recordAudit, companyName } = useAdmin();
   const { showToast } = useToast();
   const searchParams = useSearchParams();
   const activeCompanies = companies.filter((company) => company.status === 'active');
@@ -81,6 +81,7 @@ export function MarketplacesPage() {
     const existing = accounts.find((account) => account.id === draft.accountId);
     const account: AdminAccount = { id: accountId, marketplace: draft.marketplace, companyId: draft.companyId, displayName: draft.displayName.trim(), status: 'syncing', lastSuccessfulSyncAt: null, listingCount: 0 };
     setAccounts((current) => draft.accountId ? current.map((item) => item.id === draft.accountId ? { ...item, status: 'syncing' } : item) : [...current, account]);
+    if (draft.accountId) publishAccountStatus(draft.accountId, 'syncing');
     recordAudit({ action: draft.accountId ? 'Marketplace reconnected' : 'Marketplace connected', area: 'Marketplace Accounts', entity: draft.displayName.trim(), companyId: draft.companyId, before: existing ? STATUS_LABELS[existing.status] : 'Not connected', after: 'Connected · sync in progress', reason: 'Account authorised by Organisation Admin' });
     setDraft({ ...draft, accountId, step: 3 });
     showToast(`${draft.displayName.trim()} ${draft.accountId ? 'reconnected' : 'connected'}`);
@@ -90,12 +91,15 @@ export function MarketplacesPage() {
     const { account, type } = confirmation;
     const status = type === 'pause' ? 'paused' : type === 'disconnect' ? 'disconnected' : 'syncing';
     setAccounts((current) => current.map((item) => item.id === account.id ? { ...item, status } : item));
+    publishAccountStatus(account.id, status);
     recordAudit({ action: type === 'pause' ? 'Marketplace sync paused' : type === 'resume' ? 'Marketplace sync resumed' : 'Marketplace disconnected', area: 'Marketplace Accounts', entity: account.displayName, companyId: account.companyId, before: STATUS_LABELS[account.status], after: STATUS_LABELS[status] });
     showToast(type === 'pause' ? `Sync paused for ${account.displayName}` : type === 'resume' ? `Sync resumed for ${account.displayName}` : `${account.displayName} disconnected`);
     setConfirmation(null);
   }
   function refreshSync(account: AdminAccount) {
-    setAccounts((current) => current.map((item) => item.id === account.id ? { ...item, status: 'connected', lastSuccessfulSyncAt: new Date().toISOString(), listingCount: item.listingCount || 124 } : item));
+    const lastSuccessfulSyncAt = new Date().toISOString();
+    setAccounts((current) => current.map((item) => item.id === account.id ? { ...item, status: 'synced', lastSuccessfulSyncAt, listingCount: item.listingCount || 124 } : item));
+    publishAccountStatus(account.id, 'synced');
     showToast(`${account.displayName} is up to date`);
   }
   function nextStep(event: FormEvent<HTMLFormElement>) {

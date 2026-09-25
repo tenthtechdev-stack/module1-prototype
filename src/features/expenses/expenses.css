@@ -11,7 +11,16 @@
 .expense-filter-bar label { flex: 1 1 125px; max-width: 240px; }
 .expense-filter-bar .expense-search { flex: 2 1 220px; max-width: 320px; }
 .expense-filter-bar input, .expense-filter-bar select, .expense-editor input, .expense-editor select, .expense-editor textarea { width: 100%; min-width: 0; min-height: 36px; padding: 7px 9px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); color: var(--text-primary); font-size: 13px; }
-.expense-filter-bar select { text-overflow: ellipsis; }
+.expense-filter-bar select, .expense-editor select {
+  appearance: none;
+  padding-right: 30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2369798b' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.expense-filter-bar select:hover:not(:disabled), .expense-editor select:hover:not(:disabled) { border-color: var(--primary); background-color: var(--surface-hover); }
 .expense-filter-bar .expense-check, .expense-editor .expense-check { flex-direction: row; align-items: center; line-height: 1.5; min-height: 36px; }
 .expense-filter-bar .expense-check { flex: 0 1 130px; }
 .expense-check input[type=checkbox] { flex: 0 0 16px; width: 16px; height: 16px; min-height: 16px; accent-color: var(--primary); }

@@ -465,7 +465,7 @@ expectContains('src/components/providers/analysis-context-provider.tsx', [
   'resolveDateRange({',
   'setDateRange:',
 ]);
-expectContains('src/components/layout/context-bar.tsx', ["value=\"custom\"", 'context.dateRange.from', 'context.dateRange.to']);
+expectContains('src/components/layout/context-bar.tsx', ["value: 'custom'", 'context.dateRange.from', 'context.dateRange.to']);
 
 const tenantLayoutSource = read('app/o/[orgSlug]/layout.tsx');
 expect(!tenantLayoutSource.includes("orgSlug !== 'stock-supplies'"), 'tenant layout must not hardcode the primary organisation slug');

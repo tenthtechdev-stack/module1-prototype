@@ -1,7 +1,8 @@
 'use client';
 
 import { Children, cloneElement, isValidElement, useId, useRef, type AriaAttributes, type InputHTMLAttributes, type ReactElement, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
-import { CalendarDays, Search } from 'lucide-react';
+import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
+import { CalendarDays, Check, ChevronDown, Search } from 'lucide-react';
 
 interface FieldControlProps {
   id?: string;
@@ -120,6 +121,71 @@ export function Textarea({ className = '', ...props }: TextareaHTMLAttributes<HT
 
 export function Select({ className = '', children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
   return <select className={`ui-select ${className}`.trim()} {...props}>{children}</select>;
+}
+
+export interface SelectMenuOption {
+  value: string;
+  label: string;
+  disabled?: boolean;
+}
+
+export function SelectMenu({
+  value,
+  onValueChange,
+  options,
+  ariaLabel,
+  disabled = false,
+  className = '',
+  startIcon,
+}: {
+  value: string;
+  onValueChange: (value: string) => void;
+  options: SelectMenuOption[];
+  ariaLabel: string;
+  disabled?: boolean;
+  className?: string;
+  startIcon?: ReactNode;
+}) {
+  const selected = options.find((option) => option.value === value) ?? options[0];
+  const selectedLabel = selected?.label ?? 'Select an option';
+
+  return <DropdownMenuPrimitive.Root>
+    <DropdownMenuPrimitive.Trigger
+      type="button"
+      className={`ui-select-menu-trigger ${className}`.trim()}
+      disabled={disabled}
+      aria-label={`${ariaLabel}: ${selectedLabel}`}
+      title={selectedLabel}
+    >
+      {startIcon ? <span className="ui-select-menu-start-icon" aria-hidden="true">{startIcon}</span> : null}
+      <span className="ui-select-menu-value">{selectedLabel}</span>
+      <ChevronDown className="ui-select-menu-chevron" size={13} aria-hidden="true" />
+    </DropdownMenuPrimitive.Trigger>
+    <DropdownMenuPrimitive.Portal>
+      <DropdownMenuPrimitive.Content
+        className="ui-select-menu-content"
+        align="start"
+        sideOffset={5}
+        collisionPadding={10}
+        aria-label={`${ariaLabel} options`}
+      >
+        <DropdownMenuPrimitive.RadioGroup value={value} onValueChange={onValueChange}>
+          {options.map((option) => <DropdownMenuPrimitive.RadioItem
+            className="ui-select-menu-item"
+            disabled={option.disabled}
+            key={option.value}
+            value={option.value}
+            title={option.label}
+          >
+            <span className="ui-select-menu-indicator" aria-hidden="true">
+              <DropdownMenuPrimitive.ItemIndicator><Check size={13} /></DropdownMenuPrimitive.ItemIndicator>
+            </span>
+            <span>{option.label}</span>
+          </DropdownMenuPrimitive.RadioItem>)}
+        </DropdownMenuPrimitive.RadioGroup>
+      </DropdownMenuPrimitive.Content>
+    </DropdownMenuPrimitive.Portal>
+  </DropdownMenuPrimitive.Root>;
 }
 
 export type MultiSelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, 'multiple'>;

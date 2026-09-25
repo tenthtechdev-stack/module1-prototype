@@ -1,12 +1,13 @@
 'use client';
 
-import { createContext, useContext, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { useAnalysisContext } from '@/src/components/providers/analysis-context-provider';
 import { useAccessRuntime } from '@/src/components/rbac/access';
 import { usePrototype } from '@/src/components/providers/prototype-provider';
 import { getUserRoleAssignments, ROLE_PRESETS, type Capability, type RolePreset } from '@/src/domain/permissions';
 import type { Company, MarketplaceAccount, Organisation, User, UserRoleAssignment, SyncStatus } from '@/src/domain/models';
 import type { WorkspaceSnapshot } from '@/src/services/contracts';
+import { useMarketplaceStatusOverrides } from '@/src/services/mock/marketplace-status-store';
 
 export interface AdminCompany extends Company { status: 'active' | 'inactive'; tradingName: string; description: string; productCount: number }
 export interface AdminAccount extends Omit<MarketplaceAccount, 'status'> { status: SyncStatus | 'paused'; listingCount: number }
@@ -26,6 +27,7 @@ interface AdminContextValue {
   setCompanies: Dispatch<SetStateAction<AdminCompany[]>>;
   accounts: AdminAccount[];
   setAccounts: Dispatch<SetStateAction<AdminAccount[]>>;
+  publishAccountStatus: (accountId: string, status: AdminAccount['status']) => void;
   users: AdminUser[];
   setUsers: Dispatch<SetStateAction<AdminUser[]>>;
   roles: AdminRole[];
@@ -114,13 +116,25 @@ function seedAudit(workspace: WorkspaceSnapshot): AdminAuditEvent[] {
 
 function AdminState({ workspace, children }: { workspace: WorkspaceSnapshot; children: React.ReactNode }) {
   const { role } = useAccessRuntime();
-  const { scenarioId } = usePrototype();
+  const { scenarioId, scenarioRevision } = usePrototype();
+  const { statusOverrides, setStatusOverride } = useMarketplaceStatusOverrides(workspace.organisation.id, scenarioId, scenarioRevision);
   const [organisation, setOrganisation] = useState<AdminContextValue['organisation']>({ ...workspace.organisation, createdAt: '2025-01-15', status: 'active' });
   const [companies, setCompanies] = useState<AdminCompany[]>(() => workspace.companies.map(company => ({ ...company, status: 'active', tradingName: company.name.replace(/ Ltd$/, ''), description: 'Marketplace trading company within the organisation.', productCount: workspace.organisation.slug === 'stock-supplies' ? 60 : 0 })));
-  const [accounts, setAccounts] = useState<AdminAccount[]>(() => workspace.marketplaceAccounts.map((account, index) => ({
+  const [accountDrafts, setAccountDrafts] = useState<AdminAccount[]>(() => workspace.marketplaceAccounts.map((account, index) => ({
     ...account, status: scenarioId === 'healthy' && workspace.organisation.slug === 'stock-supplies' ? (['synced', 'authentication_required', 'delayed', 'syncing', 'paused', 'disconnected'] as AdminAccount['status'][])[index] ?? account.status : account.status,
     listingCount: workspace.organisation.slug === 'stock-supplies' ? [35, 20, 17, 45, 28, 63][index] ?? 0 : 0,
   })));
+  const accounts = useMemo(() => accountDrafts.map((account) => statusOverrides[account.id] && statusOverrides[account.id] !== account.status
+    ? { ...account, status: statusOverrides[account.id] }
+    : account), [accountDrafts, statusOverrides]);
+  const setAccounts: Dispatch<SetStateAction<AdminAccount[]>> = useCallback((action) => {
+    setAccountDrafts((current) => {
+      const effective = current.map((account) => statusOverrides[account.id] && statusOverrides[account.id] !== account.status
+        ? { ...account, status: statusOverrides[account.id] }
+        : account);
+      return typeof action === 'function' ? action(effective) : action;
+    });
+  }, [statusOverrides]);
   const [users, setUsers] = useState<AdminUser[]>(() => seedUsers(workspace));
   const [customRoles, setCustomRoles] = useState<AdminRole[]>(() => seedCustomRoles(workspace.organisation.id));
   const roles = useMemo(() => [...defaultRoles, ...customRoles], [customRoles]);
@@ -129,13 +143,13 @@ function AdminState({ workspace, children }: { workspace: WorkspaceSnapshot; chi
     const actor = users.find(user => getUserRoleAssignments(user).some((assignment) => assignment.roleId === role.id) && user.status === 'active')?.name ?? role.label;
     setAudit(current => [{ ...input, id: crypto.randomUUID(), timestamp: new Date().toISOString(), actor, source: 'Tenant Administration · local prototype' }, ...current]);
   }
-  return <AdminContext.Provider value={{ orgSlug: organisation.slug, organisation, setOrganisation, companies, setCompanies, accounts, setAccounts, users, setUsers, roles, customRoles, setCustomRoles, audit, recordAudit, companyName: id => companies.find(company => company.id === id)?.name ?? 'Organisation-wide' }}>{children}</AdminContext.Provider>;
+  return <AdminContext.Provider value={{ orgSlug: organisation.slug, organisation, setOrganisation, companies, setCompanies, accounts, setAccounts, publishAccountStatus: setStatusOverride, users, setUsers, roles, customRoles, setCustomRoles, audit, recordAudit, companyName: id => companies.find(company => company.id === id)?.name ?? 'Organisation-wide' }}>{children}</AdminContext.Provider>;
 }
 
 export function AdminProvider({ children }: { children: React.ReactNode }) {
   const { workspace } = useAnalysisContext();
-  const { scenarioId } = usePrototype();
-  return <AdminState key={`${workspace.organisation.id}:${scenarioId}`} workspace={workspace}>{children}</AdminState>;
+  const { scenarioId, scenarioRevision } = usePrototype();
+  return <AdminState key={`${workspace.organisation.id}:${scenarioId}:${scenarioRevision}`} workspace={workspace}>{children}</AdminState>;
 }
 export function useAdmin() {
   const context = useContext(AdminContext);
