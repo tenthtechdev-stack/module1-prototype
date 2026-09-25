@@ -30,7 +30,7 @@ function TenantShellContent({ orgSlug, children }: { orgSlug: string; children: 
     <AnalysisContextProvider orgSlug={orgSlug} workspace={workspace}>
       <div className="app-shell tenant-shell">
         <a className="skip-link" href="#main-content">Skip to content</a>
-        <AppHeader organisationName={workspace.organisation.name} userName={workspace.activeUser?.name} mobileNavigation={<MobileNavigation sections={tenantNavigation} orgSlug={orgSlug} workspace={workspace} />} copilot={isAdmin ? undefined : <CopilotDrawer />} />
+        <AppHeader organisationName={workspace.organisation.name} userName={workspace.activeUser?.name} orgSlug={orgSlug} mobileNavigation={<MobileNavigation sections={tenantNavigation} orgSlug={orgSlug} workspace={workspace} />} copilot={isAdmin ? undefined : <CopilotDrawer />} />
         <aside className="sidebar" aria-label="Primary navigation">
           <NavigationList sections={tenantNavigation} orgSlug={orgSlug} />
           <OrganisationCard workspace={workspace} />

@@ -22,6 +22,7 @@ import {
   FileWarning,
   HelpCircle,
   Layers3,
+  Pencil,
   RefreshCw,
   Store,
   Wrench,
@@ -675,7 +676,13 @@ export function ProductsPage() {
       id: 'currentCogs',
       header: () => <ColumnHeader label="Current COGS" help="The currently effective unit cost. Historical profitability uses the cost effective on each transaction date." />,
       size: 120,
-      cell: ({ getValue }) => getValue() === null ? <span className="product-value-incomplete">Missing</span> : <span className="numeric">{formatMoney(getValue())}</span>,
+      cell: ({ getValue, row }) => {
+        const value = getValue();
+        const label = value === null ? 'Missing' : formatMoney(value);
+        return cogsAccess.allowed
+          ? <button type="button" className={`product-inline-cogs${value === null ? ' missing' : ''}`} aria-label={`Update Current COGS for ${row.original.product.title}`} title="Open the governed COGS update" onClick={() => router.push(`/o/${workspace.organisation.slug}/cogs?product=${encodeURIComponent(row.original.product.id)}&action=edit`)}><span className={value === null ? 'product-value-incomplete' : 'numeric'}>{label}</span><Pencil size={12} aria-hidden="true" /></button>
+          : value === null ? <span className="product-value-incomplete">Missing</span> : <span className="numeric">{label}</span>;
+      },
     }),
     columnHelper.accessor((row) => row.productGroup?.name ?? '', {
       id: 'productGroup',
@@ -766,7 +773,7 @@ export function ProductsPage() {
       size: 150,
       cell: ({ row, getValue }) => <span className="product-freshness-cell"><StatusIndicator tone={row.original.dataFreshness.state === 'fresh' ? 'positive' : row.original.dataFreshness.state === 'warning' ? 'warning' : row.original.dataFreshness.state === 'error' ? 'negative' : 'info'} label={row.original.dataFreshness.label} /><small>{formatDate(getValue(), { day: 'numeric', month: 'short' })}</small></span>,
     }),
-  ]).filter((column) => (profitabilityAccess.allowed || !FINANCIAL_COLUMN_IDS.has(column.id ?? '')) && (cogsViewAccess.allowed || !COGS_COLUMN_IDS.has(column.id ?? ''))), [accountNameFor, cogsViewAccess.allowed, companyNameFor, context.companyId, context.marketplace, detailHref, profitabilityAccess.allowed, workspace.organisation.slug]);
+  ]).filter((column) => (profitabilityAccess.allowed || !FINANCIAL_COLUMN_IDS.has(column.id ?? '')) && (cogsViewAccess.allowed || !COGS_COLUMN_IDS.has(column.id ?? ''))), [accountNameFor, cogsAccess.allowed, cogsViewAccess.allowed, companyNameFor, context.companyId, context.marketplace, detailHref, profitabilityAccess.allowed, router, workspace.organisation.slug]);
 
   const rowActions = useCallback((row: ProductListItem) => {
     const identifier = row.listings.map(listingIdentifier).find(Boolean);

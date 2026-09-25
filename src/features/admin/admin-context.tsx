@@ -1,15 +1,21 @@
 'use client';
 
-import { createContext, useContext, useState, type Dispatch, type SetStateAction } from 'react';
+import { createContext, useContext, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { useAnalysisContext } from '@/src/components/providers/analysis-context-provider';
 import { useAccessRuntime } from '@/src/components/rbac/access';
 import { usePrototype } from '@/src/components/providers/prototype-provider';
-import type { Company, MarketplaceAccount, Organisation, User, SyncStatus } from '@/src/domain/models';
+import { getUserRoleAssignments, ROLE_PRESETS, type Capability, type RolePreset } from '@/src/domain/permissions';
+import type { Company, MarketplaceAccount, Organisation, User, UserRoleAssignment, SyncStatus } from '@/src/domain/models';
 import type { WorkspaceSnapshot } from '@/src/services/contracts';
 
 export interface AdminCompany extends Company { status: 'active' | 'inactive'; tradingName: string; description: string; productCount: number }
 export interface AdminAccount extends Omit<MarketplaceAccount, 'status'> { status: SyncStatus | 'paused'; listingCount: number }
 export interface AdminUser extends User { status: 'active' | 'invited' | 'suspended'; lastActiveAt: string | null }
+export interface AdminRole extends RolePreset {
+  kind: 'default' | 'custom';
+  status: 'active' | 'inactive';
+  organisationId: string | null;
+}
 export interface AdminAuditInput { action: string; area: string; entity: string; companyId?: string | null; before?: string; after?: string; reason?: string }
 export interface AdminAuditEvent extends AdminAuditInput { id: string; timestamp: string; actor: string; source: string }
 interface AdminContextValue {
@@ -22,14 +28,28 @@ interface AdminContextValue {
   setAccounts: Dispatch<SetStateAction<AdminAccount[]>>;
   users: AdminUser[];
   setUsers: Dispatch<SetStateAction<AdminUser[]>>;
+  roles: AdminRole[];
+  customRoles: AdminRole[];
+  setCustomRoles: Dispatch<SetStateAction<AdminRole[]>>;
   audit: AdminAuditEvent[];
   recordAudit: (input: AdminAuditInput) => void;
   companyName: (id: string) => string;
 }
 const AdminContext = createContext<AdminContextValue | null>(null);
+const defaultRoles: AdminRole[] = ROLE_PRESETS
+  .filter((role) => role.surface === 'tenant')
+  .map((role) => ({ ...role, capabilities: [...role.capabilities], kind: 'default', status: 'active', organisationId: null }));
+
+function copyAssignments(user: User): UserRoleAssignment[] {
+  return getUserRoleAssignments(user).map((assignment) => ({
+    ...assignment,
+    companyIds: assignment.companyIds === 'all' ? 'all' : [...assignment.companyIds],
+    marketplaceAccountIds: assignment.marketplaceAccountIds === 'all' ? 'all' : [...assignment.marketplaceAccountIds],
+  }));
+}
 
 function seedUsers(workspace: WorkspaceSnapshot): AdminUser[] {
-  const existing: AdminUser[] = workspace.users.map(user => ({ ...user, status: 'active', lastActiveAt: '2026-08-27T18:30:00Z' }));
+  const existing: AdminUser[] = workspace.users.map(user => ({ ...user, roleAssignments: copyAssignments(user), status: 'active', lastActiveAt: '2026-08-27T18:30:00Z' }));
   if (workspace.organisation.slug !== 'stock-supplies') return existing;
   const additions: Array<[string, string, string, AdminUser['status'], string[] | 'all']> = [
     ['Oliver Bennett', 'company-manager', 'oliver.bennett@stocksupplies.co.uk', 'active', ['cmp-stock', 'cmp-proserve']],
@@ -38,11 +58,38 @@ function seedUsers(workspace: WorkspaceSnapshot): AdminUser[] {
     ['Sophie Turner', 'marketplace-manager', 'sophie.turner@stocksupplies.co.uk', 'suspended', ['cmp-stock']],
     ['Noah Williams', 'analyst', 'noah.williams@proserve.co.uk', 'invited', ['cmp-proserve']],
   ];
-  return [...existing, ...additions.map(([name, roleId, email, status, companyIds], index): AdminUser => ({
-    id: `admin-demo-user-${index}`, organisationId: workspace.organisation.id, name, roleId, email, status, companyIds,
-    jobTitle: '', marketplaceAccountIds: roleId === 'marketplace-manager' ? ['acct-stock-amazon'] : 'all',
-    lastActiveAt: status === 'invited' ? null : '2026-08-26T14:20:00Z',
-  }))];
+  return [...existing, ...additions.map(([name, roleId, email, status, companyIds], index): AdminUser => {
+    const marketplaceAccountIds = roleId === 'marketplace-manager' ? ['acct-stock-amazon'] : 'all';
+    const primary: UserRoleAssignment = {
+      id: `admin-demo-assignment-${index}-primary`,
+      roleId,
+      scope: companyIds === 'all' ? 'organisation' : roleId === 'marketplace-manager' ? 'marketplace-account' : 'company',
+      companyIds,
+      marketplaceAccountIds,
+    };
+    const roleAssignments = roleId === 'finance'
+      ? [primary, { id: `admin-demo-assignment-${index}-analysis`, roleId: 'analyst', scope: 'company' as const, companyIds: ['cmp-proserve'], marketplaceAccountIds: 'all' as const }]
+      : [primary];
+    return {
+      id: `admin-demo-user-${index}`, organisationId: workspace.organisation.id, name, roleId, email, status, companyIds,
+      jobTitle: '', marketplaceAccountIds, roleAssignments,
+      lastActiveAt: status === 'invited' ? null : '2026-08-26T14:20:00Z',
+    };
+  })];
+}
+
+function seedCustomRoles(organisationId: string): AdminRole[] {
+  const capabilities: Capability[] = ['profitability.view', 'products.view', 'cogs.view', 'cogs.approve', 'expenses.view', 'expenses.view_sensitive', 'reports.view', 'audit.view'];
+  return [{
+    id: 'custom-finance-reviewer',
+    label: 'Finance Reviewer',
+    description: 'Reviews financial and cost information without editing operational records.',
+    surface: 'tenant',
+    capabilities,
+    kind: 'custom',
+    status: 'active',
+    organisationId,
+  }];
 }
 
 function seedAudit(workspace: WorkspaceSnapshot): AdminAuditEvent[] {
@@ -75,12 +122,14 @@ function AdminState({ workspace, children }: { workspace: WorkspaceSnapshot; chi
     listingCount: workspace.organisation.slug === 'stock-supplies' ? [35, 20, 17, 45, 28, 63][index] ?? 0 : 0,
   })));
   const [users, setUsers] = useState<AdminUser[]>(() => seedUsers(workspace));
+  const [customRoles, setCustomRoles] = useState<AdminRole[]>(() => seedCustomRoles(workspace.organisation.id));
+  const roles = useMemo(() => [...defaultRoles, ...customRoles], [customRoles]);
   const [audit, setAudit] = useState<AdminAuditEvent[]>(() => seedAudit(workspace));
   function recordAudit(input: AdminAuditInput) {
-    const actor = users.find(user => user.roleId === role.id && user.status === 'active')?.name ?? role.label;
+    const actor = users.find(user => getUserRoleAssignments(user).some((assignment) => assignment.roleId === role.id) && user.status === 'active')?.name ?? role.label;
     setAudit(current => [{ ...input, id: crypto.randomUUID(), timestamp: new Date().toISOString(), actor, source: 'Tenant Administration · local prototype' }, ...current]);
   }
-  return <AdminContext.Provider value={{ orgSlug: organisation.slug, organisation, setOrganisation, companies, setCompanies, accounts, setAccounts, users, setUsers, audit, recordAudit, companyName: id => companies.find(company => company.id === id)?.name ?? 'Organisation-wide' }}>{children}</AdminContext.Provider>;
+  return <AdminContext.Provider value={{ orgSlug: organisation.slug, organisation, setOrganisation, companies, setCompanies, accounts, setAccounts, users, setUsers, roles, customRoles, setCustomRoles, audit, recordAudit, companyName: id => companies.find(company => company.id === id)?.name ?? 'Organisation-wide' }}>{children}</AdminContext.Provider>;
 }
 
 export function AdminProvider({ children }: { children: React.ReactNode }) {

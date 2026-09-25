@@ -10,6 +10,7 @@ import { platformNavigation } from '@/src/config/navigation';
 
 import { usePrototype } from '@/src/components/providers/prototype-provider';
 import { PageSkeleton } from '@/src/components/states/states';
+import { AppearanceMenu } from '@/src/components/theme/appearance-control';
 
 function PlatformMobileNavigation() {
   const [open, setOpen] = useState(false);
@@ -33,7 +34,7 @@ function PlatformShellContent({ children }: { children: React.ReactNode }) {
       <header className="app-header platform-header">
         <div className="brand-lockup"><span className="mobile-header-nav"><PlatformMobileNavigation /></span><span className="brand-mark">TT</span><div><strong>Tenth Tech</strong><span>Platform Administration</span></div></div>
         <form className="global-search" onSubmit={event => { event.preventDefault(); router.push('/platform/organisations?q=' + encodeURIComponent(query)); }}><Search size={16} /><input aria-label="Search organisations" placeholder="Search organisations…" value={query} onChange={event => setQuery(event.target.value)} /><button type="submit" className="platform-search-submit">Search</button></form>
-        <div className="header-actions"><span className="platform-identity"><ShieldCheck size={15} />Super Admin</span><span className="avatar-button" title="Zara Rahman · Platform Super Admin">ZR</span></div>
+        <div className="header-actions"><span className="platform-identity"><ShieldCheck size={15} />Super Admin</span><AppearanceMenu userName="Zara Rahman · Platform Super Admin" userEmail="zara.rahman@stocksupplies.co.uk" trigger={<button type="button" className="avatar-button" aria-label="Open user menu for Zara Rahman">ZR</button>} /></div>
       </header>
       <aside className="sidebar platform-sidebar" aria-label="Platform navigation">
         <div><span className="platform-badge">Tenth Tech Platform Administration</span><NavigationList sections={platformNavigation} /></div>

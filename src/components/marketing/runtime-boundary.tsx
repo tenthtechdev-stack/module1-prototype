@@ -8,7 +8,7 @@ const PrivateRuntime = dynamic(() => import('@/src/components/providers/app-prov
 /** Prototype review shares one runtime across public and private journeys. */
 export function RuntimeBoundary({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  return process.env.NEXT_PUBLIC_PROTOTYPE_MODE === 'true' || /^\/(auth|onboarding|o|platform)(\/|$)/.test(pathname)
+  return process.env.NEXT_PUBLIC_PROTOTYPE_MODE === 'true' || /^\/(account|auth|onboarding|o|platform)(\/|$)/.test(pathname)
     ? <PrivateRuntime>{children}</PrivateRuntime>
     : children;
 }

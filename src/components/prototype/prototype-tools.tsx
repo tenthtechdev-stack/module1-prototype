@@ -10,6 +10,7 @@ import { usePrototype } from '@/src/components/providers/prototype-provider';
 import { useOnboarding } from '@/src/components/providers/onboarding-provider';
 import { usePlatform } from '@/src/features/platform/platform-context';
 import { equivalentWorkspacePath, journeyHref, PROTOTYPE_JOURNEYS } from './prototype-journeys';
+import { AppearanceSelect } from '@/src/components/theme/appearance-control';
 import './prototype-tools.css';
 
 export function PrototypeTools() {
@@ -102,7 +103,7 @@ export function PrototypeTools() {
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <aside className="prototype-tools" aria-label="Prototype controller">
         <span className="prototype-label"><TestTube2 size={15} /> PROTOTYPE</span>
-        <div className="prototype-desktop-controls" aria-busy={navigating}>{journeyControl()}{roleControl()}{scenarioControl()}</div>
+        <div className="prototype-desktop-controls" aria-busy={navigating}>{journeyControl()}{roleControl()}{scenarioControl()}<AppearanceSelect /></div>
         <Dialog.Trigger asChild><button type="button" className="prototype-tools-trigger" aria-label="Open prototype controller"><SlidersHorizontal size={15} /><span className="prototype-trigger-desktop">More</span><span className="prototype-trigger-mobile">PROTOTYPE</span></button></Dialog.Trigger>
         {navigating || (error && !open) ? <div className="prototype-toolbar-status" role={error ? 'alert' : 'status'}>{error ?? 'Preparing onboarding preview…'}</div> : null}
       </aside>
@@ -117,6 +118,8 @@ export function PrototypeTools() {
             {roleControl()}
             {scenarioControl()}
             <p className="prototype-control-hint" aria-live="polite">{scenario?.description}</p>
+            <AppearanceSelect />
+            <p className="prototype-control-hint">System follows this device&apos;s colour preference. Explicit choices persist locally.</p>
             <label className="prototype-control"><span>Organisation</span><select aria-label="Prototype organisation" value={currentSlug} disabled={navigating} onChange={(event) => changeOrganisation(event.target.value)}>{organisations.map((organisation) => <option key={organisation.id} value={organisation.slug}>{organisation.name}</option>)}</select></label>
             <p className="prototype-control-hint">Open the equivalent workspace page. Detail pages return to their list.</p>
             {navigating ? <p className="prototype-notice" role="status">Preparing onboarding preview…</p> : null}

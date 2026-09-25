@@ -1,5 +1,5 @@
 import type { AnalyticsDataset } from '@/src/domain/analytics';
-import type { Expense, ExpenseScope } from '@/src/domain/models';
+import type { ExpenseScope } from '@/src/domain/models';
 import { evaluateAccess, type Capability } from '@/src/domain/permissions';
 import { currentExpenseVersion, expenseStatus, EXPENSE_TODAY, validExpenseDate, type ExpenseDefinition, type ExpenseDetail, type ExpenseDraft, type ExpenseFilters, type ExpenseListItem, type ExpenseRepositoryInput, type ExpenseVersion, type ExpenseWorkspace } from '@/src/domain/expenses';
 import { shiftIsoDate } from '@/src/domain/financial-calculations';

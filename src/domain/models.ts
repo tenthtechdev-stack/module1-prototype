@@ -82,6 +82,16 @@ export interface Role {
   permissionKeys: string[];
 }
 
+export type RoleAssignmentLevel = 'organisation' | 'company' | 'marketplace-account';
+
+export interface UserRoleAssignment {
+  id: string;
+  roleId: string;
+  scope: RoleAssignmentLevel;
+  companyIds: 'all' | string[];
+  marketplaceAccountIds: 'all' | string[];
+}
+
 export interface User {
   id: string;
   organisationId: string;
@@ -91,6 +101,11 @@ export interface User {
   roleId: string;
   companyIds: 'all' | string[];
   marketplaceAccountIds: 'all' | string[];
+  /**
+   * Prototype extension for flexible tenant RBAC. The legacy fields above remain
+   * the primary assignment so existing single-role consumers keep working.
+   */
+  roleAssignments?: UserRoleAssignment[];
 }
 
 export interface MoneyAmount {

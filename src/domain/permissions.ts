@@ -1,4 +1,4 @@
-import type { ModuleEntitlementKey, SubscriptionStatus } from '@/src/domain/models';
+import type { ModuleEntitlementKey, SubscriptionStatus, User, UserRoleAssignment } from '@/src/domain/models';
 
 export const CAPABILITIES = [
   'profitability.view',
@@ -41,6 +41,76 @@ export interface RolePreset {
 export interface AssignmentScope {
   companyIds: 'all' | string[];
   accountIds: 'all' | string[];
+}
+
+export const CAPABILITY_LABELS: Record<Capability, string> = {
+  'profitability.view': 'Dashboard & profitability',
+  'products.view': 'Products · View',
+  'transactions.view': 'Transactions · View',
+  'cogs.view': 'COGS · View',
+  'cogs.edit': 'COGS · Manage',
+  'cogs.import': 'COGS · Import',
+  'cogs.approve': 'COGS · Approve',
+  'expenses.view': 'Expenses · View',
+  'expenses.view_sensitive': 'Expenses · View sensitive values',
+  'expenses.edit': 'Expenses · Manage',
+  'reports.view': 'Reports · View & export',
+  'sync.view': 'Marketplace accounts · View sync',
+  'sync.retry': 'Marketplace accounts · Retry sync',
+  'companies.manage': 'Companies · Manage',
+  'marketplaces.manage': 'Marketplace accounts · Manage connection',
+  'users.manage': 'Users · Invite & manage assignments',
+  'roles.manage': 'Roles & permissions · Manage',
+  'billing.manage': 'Billing & modules · Manage',
+  'audit.view': 'Audit · View',
+  'copilot.use': 'AI Copilot · Use',
+  'platform.organisations.view': 'Platform organisations · View',
+  'platform.entitlements.manage': 'Platform entitlements · Manage',
+  'platform.integrations.manage': 'Platform integrations · Manage',
+  'platform.ai_usage.view': 'Platform AI usage · View',
+  'platform.audit.view': 'Platform audit · View',
+};
+
+export interface CapabilityGroup {
+  label: string;
+  description: string;
+  capabilities: Capability[];
+}
+
+export const TENANT_CAPABILITY_GROUPS: CapabilityGroup[] = [
+  { label: 'Dashboard', description: 'Commercial overview and profitability.', capabilities: ['profitability.view'] },
+  { label: 'Products', description: 'Product catalogue visibility.', capabilities: ['products.view'] },
+  { label: 'COGS & Product Groups', description: 'Cost visibility, maintenance, imports and approval workflows.', capabilities: ['cogs.view', 'cogs.edit', 'cogs.import', 'cogs.approve'] },
+  { label: 'Transactions', description: 'Marketplace transaction visibility.', capabilities: ['transactions.view'] },
+  { label: 'Expenses', description: 'Expense visibility, sensitive values and maintenance.', capabilities: ['expenses.view', 'expenses.view_sensitive', 'expenses.edit'] },
+  { label: 'Reports', description: 'Report visibility and the existing export actions.', capabilities: ['reports.view'] },
+  { label: 'Marketplace Accounts', description: 'Sync visibility, retries and connection management.', capabilities: ['sync.view', 'sync.retry', 'marketplaces.manage'] },
+  { label: 'Companies', description: 'Company administration.', capabilities: ['companies.manage'] },
+  { label: 'Users', description: 'Invitations and scoped role assignments.', capabilities: ['users.manage'] },
+  { label: 'Roles & Permissions', description: 'Custom role administration.', capabilities: ['roles.manage'] },
+  { label: 'Billing & Modules', description: 'Subscription and module administration.', capabilities: ['billing.manage'] },
+  { label: 'Audit', description: 'Organisation audit trail.', capabilities: ['audit.view'] },
+  { label: 'AI Copilot', description: 'Permission-aware Copilot access.', capabilities: ['copilot.use'] },
+];
+
+export function getUserRoleAssignments(user: Pick<User, 'roleId' | 'companyIds' | 'marketplaceAccountIds' | 'roleAssignments'>): UserRoleAssignment[] {
+  if (user.roleAssignments?.length) return user.roleAssignments;
+  const scope = user.companyIds === 'all' && user.marketplaceAccountIds === 'all'
+    ? 'organisation'
+    : user.marketplaceAccountIds === 'all' ? 'company' : 'marketplace-account';
+  return [{
+    id: `legacy-${user.roleId}`,
+    roleId: user.roleId,
+    scope,
+    companyIds: user.companyIds,
+    marketplaceAccountIds: user.marketplaceAccountIds,
+  }];
+}
+
+export function getEffectiveCapabilities(assignments: readonly UserRoleAssignment[], roles: readonly RolePreset[]): Capability[] {
+  const allowed = new Set<Capability>();
+  assignments.forEach((assignment) => roles.find((role) => role.id === assignment.roleId)?.capabilities.forEach((capability) => allowed.add(capability)));
+  return CAPABILITIES.filter((capability) => allowed.has(capability) && !capability.startsWith('platform.'));
 }
 
 const tenantView: Capability[] = [

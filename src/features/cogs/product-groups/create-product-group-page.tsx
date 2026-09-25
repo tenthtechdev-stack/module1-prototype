@@ -11,7 +11,7 @@ import { Button, IconButton } from '@/src/components/ui/actions';
 import { Alert, Badge, useToast } from '@/src/components/ui/feedback';
 import { Checkbox, Field, Input, SearchInput, Select, Textarea, UnambiguousDateInput } from '@/src/components/ui/forms';
 import { Breadcrumbs } from '@/src/components/ui/navigation';
-import { formatInteger, formatMoney } from '@/src/domain/calculations';
+import { formatDate, formatInteger, formatMoney } from '@/src/domain/calculations';
 import { deriveInheritedCogsMinor } from '@/src/domain/product-groups';
 import { ProductThumbnail } from '@/src/features/products/product-thumbnail';
 import type { ProductGroupProductOption } from '@/src/services/product-groups-contracts';
@@ -150,7 +150,7 @@ export function CreateProductGroupPage() {
           <Field label="Unit of Measure"><Select value={unitOfMeasure} onChange={(event) => setUnitOfMeasure(event.target.value)}><option value="units">Units</option><option value="pairs">Pairs</option><option value="rolls">Rolls</option><option value="metres">Metres</option><option value="litres">Litres</option><option value="kilograms">Kilograms</option></Select></Field>
           <Field label="Currency"><Select value={currency} onChange={(event) => setCurrency(event.target.value)}><option value="GBP">GBP</option><option value="EUR">EUR</option><option value="USD">USD</option></Select></Field>
           <Field label="Base Cost" hint="Enter the cost for the full Base Quantity." error={errors.baseCost}><Input inputMode="decimal" value={baseCost} onChange={(event) => { setBaseCost(event.target.value); setConfirmed(false); }} placeholder="100.00" /></Field>
-          <Field label="Effective From" hint={effectiveFrom ? `Stored as ${effectiveFrom}` : undefined}><UnambiguousDateInput value={effectiveFrom} onChange={(event) => { setEffectiveFrom(event.target.value); setConfirmed(false); }} /></Field>
+          <Field label="Effective From" hint={effectiveFrom ? `Effective ${formatDate(effectiveFrom)}` : undefined}><UnambiguousDateInput value={effectiveFrom} onChange={(event) => { setEffectiveFrom(event.target.value); setConfirmed(false); }} /></Field>
           <Field label="Source"><Select value={source} onChange={(event) => setSource(event.target.value)}><option>Supplier invoice</option><option>Supplier price list</option><option>Contract</option><option>Initial setup</option><option>Manual review</option></Select></Field>
           <Field label="Reason" error={errors.reason}><Textarea rows={3} value={reason} onChange={(event) => { setReason(event.target.value); setConfirmed(false); }} placeholder="Why this financial basis is being created" /></Field>
           <div className="product-group-ratio-preview"><small>Base Unit Cost</small><strong>{baseCostMinor !== null && baseQuantityNumber > 0 ? new Intl.NumberFormat('en-GB', { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(baseCostMinor / baseQuantityNumber / 100) : '—'}</strong><span>{baseCostMinor !== null ? `${formatMoney(baseCostMinor, currency)} ÷ ${formatInteger(baseQuantityNumber || 0)}` : 'Enter a valid cost basis'}</span></div>

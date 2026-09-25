@@ -49,8 +49,20 @@ export const PROTOTYPE_JOURNEYS: { label: string; items: PrototypeJourney[] }[] 
     ],
   },
   {
+    label: 'My Account',
+    items: [
+      { label: 'Profile', href: '/account/profile' },
+      { label: 'Security', href: '/account/security' },
+      { label: 'Notifications', href: '/account/notifications' },
+    ],
+  },
+  {
     label: 'Tenant Application',
     items: tenantNavigation[0].items.map(({ label, href }) => ({ label, href, surface: 'tenant' })),
+  },
+  {
+    label: 'Tenant Operations',
+    items: tenantNavigation[1].items.map(({ label, href }) => ({ label, href, surface: 'tenant' })),
   },
   {
     label: 'Tenant Administration',

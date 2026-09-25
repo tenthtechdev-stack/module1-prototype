@@ -8,6 +8,7 @@ import { PrototypeProvider, usePrototype } from '@/src/components/providers/prot
 import { OnboardingProvider } from '@/src/components/providers/onboarding-provider';
 import { ToastProvider } from '@/src/components/ui/feedback';
 import { PlatformProvider } from '@/src/features/platform/platform-context';
+import { ThemeProvider } from '@/src/components/providers/theme-provider';
 
 function QueryRuntime({ children }: { children: React.ReactNode }) {
   const { realmKey } = usePrototype();
@@ -29,12 +30,14 @@ function QueryRuntime({ children }: { children: React.ReactNode }) {
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
-    <PrototypeProvider>
-      <OnboardingProvider>
-        <QueryRuntime>
-          <Tooltip.Provider delayDuration={300}><ToastProvider><PlatformProvider>{children}<Suspense fallback={null}><PrototypeTools /></Suspense></PlatformProvider></ToastProvider></Tooltip.Provider>
-        </QueryRuntime>
-      </OnboardingProvider>
-    </PrototypeProvider>
+    <ThemeProvider>
+      <PrototypeProvider>
+        <OnboardingProvider>
+          <QueryRuntime>
+            <Tooltip.Provider delayDuration={300}><ToastProvider><PlatformProvider>{children}<Suspense fallback={null}><PrototypeTools /></Suspense></PlatformProvider></ToastProvider></Tooltip.Provider>
+          </QueryRuntime>
+        </OnboardingProvider>
+      </PrototypeProvider>
+    </ThemeProvider>
   );
 }

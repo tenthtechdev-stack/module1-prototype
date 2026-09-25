@@ -176,6 +176,19 @@ try {
   };
   const workspaceQuery = { ...baseInput, search: '', status: 'all', source: 'all', effectiveDate: 'all', changedBy: 'all', needsReview: false, page: 0, pageSize: 100 };
   const workspaceBefore = await repository.getWorkspace(workspaceQuery);
+  const expectedWorkspaceProducts = products.aggregateProductExportRows(dataset, {
+    ...baseInput,
+    search: '',
+    cogsStatus: 'all',
+    listingStatus: 'all',
+    profitabilityStatus: 'all',
+    categories: [],
+    sorting: [{ field: 'product', direction: 'asc' }],
+    page: 0,
+    pageSize: 100,
+  }).length;
+  equal(workspaceBefore.allRows.length, expectedWorkspaceProducts, 'COGS workspace must include every visible Product across analytics pages');
+  equal(workspaceBefore.summary.products, expectedWorkspaceProducts, 'COGS coverage summary must use the complete visible Product catalogue');
   const target = workspaceBefore.allRows.find((row) => row.current && row.product.ownerCompanyId === selectedCompany.id) ?? workspaceBefore.allRows[0];
   const nextCost = (target.current?.unitCostMinor ?? 700) + 7;
   const editor = { id: 'usr-editor', name: 'Cost editor', permissions: { edit: true, import: false, approve: false } };

@@ -113,8 +113,18 @@ function productQuery(input: DashboardRepositoryInput, overrides: Partial<CogsWo
     categories: [],
     sorting: [{ field: 'product' as const, direction: 'asc' as const }],
     page: 0,
-    pageSize: 5_000,
+    pageSize: 100,
   };
+}
+
+function aggregateCogsProducts(dataset: AnalyticsDataset, input: DashboardRepositoryInput) {
+  const query = productQuery(input);
+  const firstPage = aggregateProductPage(dataset, query);
+  const rows = [...firstPage.rows];
+  for (let page = 1; page < firstPage.pageCount; page += 1) {
+    rows.push(...aggregateProductPage(dataset, { ...query, page }).rows);
+  }
+  return { rows, summary: firstPage.summary };
 }
 
 function activeHistoryForProduct(dataset: AnalyticsDataset, input: DashboardRepositoryInput, product: Product) {
@@ -457,7 +467,7 @@ export class MockCogsManagementRepository implements CogsRepository {
     if (input.scenarioId === 'repository-error') throw new Error('The COGS workspace request failed.');
     this.ensureScenarioBatch(input);
     const dataset = this.dataset(input);
-    const base = aggregateProductPage(dataset, productQuery(input));
+    const base = aggregateCogsProducts(dataset, input);
     const state = organisationCogsState(mockCogsManagementStore.read(), input.organisation.id);
     const pendingBatches = Object.values(state.batches).filter((batch) => ['needs-review', 'ready-for-approval', 'awaiting-approval'].includes(batch.status));
     const pendingByProduct = new Map<string, { batchId: string; unitCostMinor?: number }>();
@@ -722,7 +732,7 @@ export class MockCogsManagementRepository implements CogsRepository {
 
   private impact(dataset: AnalyticsDataset, input: DashboardRepositoryInput) {
     const dashboard = aggregateDashboardAnalytics(dataset, input);
-    const products = aggregateProductPage(dataset, productQuery(input));
+    const products = aggregateCogsProducts(dataset, input);
     return {
       productCoverageBps: products.summary.cogsCoverageBps,
       profitabilityCoverageBps: dashboard.current.profitabilityCoverageBps,
